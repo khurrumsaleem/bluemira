@@ -53,8 +53,23 @@ p2.adjust_variable("dz", 0, lower_bound=0, upper_bound=0)
 wire2 = p2.create_shape()
 face2 = BluemiraFace(wire2)
 
+# a third face is create as difference between face and face2 (a BluemiraFace object
+# has been created using wire2 as outer boundary and wire as inner boundary
+# Note:
+# - face3 is created with a wire deepcopy in order to be able to modify face and face2
+# (and thus wire and wire2) without modifying face3
+face3 = BluemiraFace([wire2.deepcopy()])
+# some operations on face
+bari = face3.center_of_mass
+face3.scale(0.5)
+new_bari = face3.center_of_mass
+diff = bari - new_bari
+v = (diff[0], diff[1], diff[2])
+face3.translate(v)
+
+
 cut_face = face2._shape.cut(face._shape)
-output = [BluemiraFace._create(f) for f in cut_face.Faces]
+output = [BluemiraFace._create(f) for f in cut_face.Faces] + [face3]
 
 # print(f"plot face with hole")
 fplotter = FaceCompoundPlotter(plane="xz")
@@ -71,3 +86,7 @@ output2 = [BluemiraFace._create(f) for c in compound for f in c.Faces]
 print(f"plot bottom part of cut face")
 fplotter.plot_points = False
 fplotter(output2, show=True, block=True, ndiscr=50, byedges=True)
+
+# another test
+fc = face._shape
+piece, map = fc.generalFuse([face2._shape])
