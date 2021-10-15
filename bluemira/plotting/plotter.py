@@ -324,9 +324,7 @@ class FacePlotter(BasePlotter):
 
     def _make_plot(self, face, ndiscr, byedges):
         self._data = [[], [], []]
-        j = 0
         for w in face._shape.Wires:
-            j = j + 1
             boundary = BluemiraWire(w)
             wplotter = WirePlotter(**self.options)
             if not self.plot_wires and not self.plot_points:
@@ -338,11 +336,6 @@ class FacePlotter(BasePlotter):
 
             # Todo: check if, for different combination of wires, the trick of
             #  inverting the first set of data works.
-            if j == 1:
-                self._data[0] += wplotter._data[0][::-1] + [None]
-                self._data[1] += wplotter._data[1][::-1] + [None]
-                self._data[2] += wplotter._data[2][::-1] + [None]
-            else:
                 self._data[0] += wplotter._data[0] + [None]
                 self._data[1] += wplotter._data[1] + [None]
                 self._data[2] += wplotter._data[2] + [None]
@@ -383,18 +376,18 @@ class FaceCompoundPlotter(FacePlotter):
         )
 
     def _make_plot(self, objs, ndiscr, byedges):
+        self._data = []
+        self._data_to_plot = []
         if "palette" in self.options:
             import seaborn as sns
 
             palette = sns.color_palette(self.options["palette"], len(objs))
-            print(f"palette: {palette}")
         else:
             palette = self.foptions["color"]
 
         for id, obj in enumerate(objs):
             temp_fplotter = FacePlotter(**self.options)
             temp_fplotter.change_foptions(("color", palette[id]))
-            print(temp_fplotter.foptions)
             self.ax = temp_fplotter(
                 obj, ax=self.ax, show=False, ndiscr=ndiscr, byedges=byedges
             )
