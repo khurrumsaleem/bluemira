@@ -660,6 +660,14 @@ class SegmentedVaccumVessel(Meshable, ReactorSystem):
         inner_cut = inner_cut_list[0]
         return inner_cut
 
+    def build_eq_port(self):
+        """
+        Build tha ports
+        """
+        z = 1.5
+        self.geom["Equatorial port VV"] = Loop(x=[5, 15, 15, 5], z=[z, z, -z, -z])
+        self.geom["Equatorial port VV"].close()
+
     @property
     def xz_plot_loop_names(self) -> list:
         """

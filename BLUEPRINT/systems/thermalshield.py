@@ -657,7 +657,7 @@ class SegmentedThermalShield(ReactorSystem):
     def build_vvts(self):
         """
         Builds the thermal shield 2D loops and shells.
-        The inner and the outer section are desctibed by two, potentially
+        The inner and the outer section are described by two, potentially
         disconnected loops. The overall thermal shield shell is obtained
         by the union of the two with a 2e-4 m radially thick union loop
         allowing obtaining the shell even with disconnected TS, correponding
@@ -1075,6 +1075,16 @@ class SegmentedThermalShield(ReactorSystem):
         self.params.r_cryo_ts = r_cryo_ts
         self.params.z_cryo_ts = z_cryo_ts
         self.params.tk_cryo_ts = tk_cryo_ts
+
+    def build_eq_port(self):  # , z_eq_port: float):
+        """
+        Creates loop object to extrude a cutter with.
+        first stage: crude brute force with rectangle shape
+        second stage: get values from process as well as BP i.e. closest PF coil etc.
+        """
+        z = 2
+        self.geom["Equatorial port"] = Loop(x=[5, 15, 15, 5], z=[z, z, -z, -z])
+        self.geom["Equatorial port"].close()
 
     @property
     def xz_plot_loop_names(self) -> list:
