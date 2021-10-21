@@ -19,40 +19,22 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with bluemira; if not, see <https://www.gnu.org/licenses/>.
 
-"""
-Constants for the cost module.
-"""
+import pytest
 
-RELATIVE_COST_FRACTIONS = {
-    "RS": 1,
-    "VV": 10,
-    "TS": 5,
-    "CR": 3,
-    "BB": 70,
-    "DIV": 90,
-    "TF wp": 100,
-    "TF case": 15,
-    "coil structures": 15,
-    "PF": 50,
-    "CS": 80,
-}
+from bluemira.codes.process.api import PROCESS_ENABLED
+from bluemira.codes.process import setup
 
-AUXILIARY_COST_FRACTIONS = {
-    "RS": 2.5,
-    "VV": 2,
-    "TS": 2,
-    "CR": 1.5,
-    "BB": 1.7,
-    "DIV": 1.5,
-    "TF wp": 2.1,
-    "TF case": 1.05,
-    "coil structures": 1.05,
-    "PF": 2.1,
-    "CS": 2.1,
-}
+
+@pytest.mark.skipif(PROCESS_ENABLED is not True, reason="PROCESS install required")
+class TestPROCESSInputWriter:
+    """Load default PROCESS values"""
+
+    writer = setup.PROCESSInputWriter()
+
+    def test_change_var(self):
+        self.writer.add_parameter("vgap2", 0.55)
+        assert self.writer.data["vgap2"].get_value == 0.55
 
 
 if __name__ == "__main__":
-    from BLUEPRINT import test
-
-    test()
+    pytest.main([__file__])
