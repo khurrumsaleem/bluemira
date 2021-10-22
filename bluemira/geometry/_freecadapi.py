@@ -783,3 +783,63 @@ def display(
     viewer.setWindowTitle("Bluemira Display")
     viewer.show()
     app.exec_()
+
+
+# # =============================================================================
+# # Plane manipulations
+# # =============================================================================
+def make_plane(base, axis, angle):
+    """
+    Make a FreeCAD Placement
+
+    Parameters
+    ----------
+    base: Iterable
+        a vector representing the Plane's position
+    axis: Iterable
+        normal vector to the Plane
+    angle:
+        rotation angle in degree
+    """
+    base = Base.Vector(base)
+    axis = Base.Vector(axis)
+
+    return Base.Placement(base, axis, angle)
+
+
+def move_plane(plane, vector):
+    """
+    Moves the FreeCAD Plane along the given vector
+
+    Parameters
+    ----------
+    plane: FreeCAD plane
+        the FreeCAD plane to be modified
+    vector: Iterable
+        direction along which the plane is moved
+
+    Returns
+    -------
+    nothing:
+        The plane is directly modified.
+    """
+    plane.move(Base.Vector(vector))
+
+
+def change_plane(geo, plane):
+    """
+    Change the placement of a FreeCAD object
+
+    Parameters
+    ----------
+    geo: FreeCAD object
+        the object to be modified
+    plane: FreeCAD plane
+        the FreeCAD plane to be modified
+
+    Returns
+    -------
+    nothing:
+        The object is directly modified.
+    """
+    geo.Placement = geo.Placement.multiply(plane)
