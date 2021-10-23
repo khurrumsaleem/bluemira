@@ -37,7 +37,7 @@ DEFAULT["flags"] = {"points": True, "wires": True, "faces": True}
 DEFAULT["poptions"] = {"s": 10, "facecolors": "blue", "edgecolors": "black"}
 DEFAULT["woptions"] = {"color": "black", "linewidth": "0.5"}
 DEFAULT["foptions"] = {"color": "red"}
-DEFAULT["plane"] = "xy"
+DEFAULT["plane"] = "xz"
 DEFAULT["palette"] = None
 
 # Note: when plotting points, it can happen that markers are not centered properly as

@@ -29,11 +29,12 @@ import copy
 from typing import Any, List, Optional, Type, Union
 
 from bluemira.base.display import DisplayOptions, Displayable, Displayer
+from bluemira.base.plot import PlotOptions, Plottable, Plotter
 
 from .error import ComponentError
 
 
-class Component(NodeMixin, Displayable):
+class Component(NodeMixin, Displayable, Plottable):
     """
     The Component is the fundamental building block for a bluemira reactor design. It
     encodes the way that the corresponding part of the reactor will be built, along with
@@ -65,6 +66,7 @@ class Component(NodeMixin, Displayable):
         if children:
             self.children = children
         self._displayer = ComponentDisplayer()
+        self._plotter = ComponentPlotter()
 
     def __new__(cls, *args, **kwargs) -> Type["Component"]:
         """
@@ -286,3 +288,44 @@ class ComponentDisplayer(Displayer):
             _append_shape_and_options(decendant)
 
         super().display(shapes, options)
+
+
+class ComponentPlotter(Plotter):
+    """
+    A Plotter class for plotting Components in 2D.
+    """
+
+    def plot(
+        self, component: "Component", options: Optional[PlotOptions] = None
+    ) -> None:
+        """
+        Plot a component by searching through the component's tree and finding any
+        components that have a shape. Then uses the child component's plot_options
+        configure the plot if the provided options are None, otherwise overrides the
+        plot options for all shapes with those provided.
+
+        Parameters
+        ----------
+        component: Component
+            The component to be displayed.
+        options: Optional[PlotOptions]
+            The options to use to plot the component and its children.
+            By default None, in which case the plot_options assigned to the component
+            and any children that can be plotted will be used.
+        """
+        shapes = []
+        override_options = options is not None
+        options = options if override_options else []
+
+        def _append_shape_and_options(comp: Component):
+            if hasattr(comp, "shape") and comp.shape is not None:
+                shapes.append(comp.shape)
+                if not override_options:
+                    options.append(comp.plot_options)
+
+        _append_shape_and_options(component)
+
+        for decendant in component.descendants or []:
+            _append_shape_and_options(decendant)
+
+        super().plot(shapes, options)

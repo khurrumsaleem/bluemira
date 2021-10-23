@@ -20,59 +20,30 @@
 # License along with bluemira; if not, see <https://www.gnu.org/licenses/>.
 
 """
-Bluemira base error class
+An example of how to use Components to represent a set of objects in a reactor.
 """
 
-from textwrap import fill, dedent
+from anytree import RenderTree
+import bluemira.base as bm_base
 
+from bluemira.plotting.plotter import (
+    PointsPlotter,
+    WirePlotter,
+    FacePlotter,
+    FaceCompoundPlotter,
+)
+from bluemira.geometry.parameterisations import PrincetonD
+from bluemira.geometry.face import BluemiraFace
 
-class BluemiraError(Exception):
-    """
-    Base exception class. Sub-class from this for module level Errors.
-    """
+# creation of a closed wire and respective face
+# PrincetonD parametrization is used as example.
+# Note: the curve is generated into the xz plane
+p = PrincetonD()
+p.adjust_variable("x1", 4, lower_bound=3, upper_bound=5)
+p.adjust_variable("x2", 16, lower_bound=10, upper_bound=20)
+p.adjust_variable("dz", 0, lower_bound=0, upper_bound=0)
+wire = p.create_shape()
+face = BluemiraFace(wire)
 
-    def __str__(self):
-        """
-        Prettier handling of the Exception strings
-        """
-        return fill(dedent(self.args[0]))
-
-
-class ComponentError(BluemiraError):
-    """
-    Exception class for Components.
-    """
-
-    pass
-
-
-class DisplayError(BluemiraError):
-    """
-    Exception class for Display functionality.
-    """
-
-    pass
-
-
-class PlotError(BluemiraError):
-    """
-    Exception class for Plot functionality.
-    """
-
-    pass
-
-
-class LogsError(BluemiraError):
-    """
-    Exception class for Components.
-    """
-
-    pass
-
-
-class ParameterError(BluemiraError):
-    """
-    Exception class for Parameters.
-    """
-
-    pass
+c = bm_base.PhysicalComponent("Comp", face)
+c.plot()
