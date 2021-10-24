@@ -32,3 +32,19 @@ class PlottingError(BluemiraError):
     """
 
     pass
+
+
+class DisplayError(PlottingError):
+    """
+    Exception class for Display functionality.
+    """
+
+    pass
+
+
+class PlotError(PlottingError):
+    """
+    Exception class for Plot functionality.
+    """
+
+    pass

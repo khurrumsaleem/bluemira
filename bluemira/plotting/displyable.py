@@ -24,6 +24,7 @@ Module containing interfaces and basic implementation for 3D displaying function
 """
 
 import abc
+import dataclasses
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
@@ -33,20 +34,14 @@ from bluemira.utilities.tools import get_module
 
 
 @dataclass
-class DisplayOptions:
+class DisplayOptions(abc.ABC):
     """
-    The options that are available for displaying objects in 3D
-
-    Parameters
-    ----------
-    rgb: Tuple[float, float, float]
-        The RBG colour to display the object, by default (0.5, 0.5, 0.5).
-    transparency: float
-        The transparency to display the object, by default 0.0.
+    The options that are available for plotting objects in 3D
     """
 
-    rgb: Tuple[float, float, float] = (0.5, 0.5, 0.5)
-    transparency: float = 0.0
+    @property
+    def options(self):
+        return dataclasses.asdict(self)
 
 
 class Displayer(abc.ABC):
@@ -61,13 +56,13 @@ class Displayer(abc.ABC):
     api: str
         The API to use for displaying. This must implement a display method with
         signature (objs, options), where objs are the primitive 3D object to display. By
-        default uses the FreeCAD api at bluemira.geometry._freecadapi.
+        default None is used -> no display output.
     """
 
     def __init__(
         self,
         options: Optional[DisplayOptions] = None,
-        api: str = "bluemira.geometry._freecadapi",
+        api: str = None,
     ):
         self._options = DisplayOptions() if options is None else options
         self._display_func = get_module(api).display

@@ -218,6 +218,11 @@ class BasePlotter(ABC):
                 self.show_plot(block=block)
         return self.ax
 
+    def plot(self, obj, ax=None, show: bool = False, block: bool = False, *args,
+             **kwargs):
+        """2D plotting method"""
+        return self.__call__(obj, ax=None, show=False, block=False, *args, **kwargs)
+
 
 class PointsPlotter(BasePlotter):
     """
@@ -231,7 +236,7 @@ class PointsPlotter(BasePlotter):
         super().__init__(**{**self.options, **kwargs})
 
     def _check_obj(self, obj):
-        # Todo: create a function that ckeck if the obj is a cloud of 3D or 2D points
+        # Todo: create a function that checks if the obj is a cloud of 3D or 2D points
         return True
 
     def _check_options(self):

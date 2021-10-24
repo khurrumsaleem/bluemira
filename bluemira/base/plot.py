@@ -24,57 +24,74 @@ Module containing interfaces and basic implementation for 3D plotting functional
 """
 
 import abc
-from dataclasses import dataclass
-from typing import Optional, Dict
+import dataclasses
+from dataclasses import dataclass, field
+from typing import Optional, Dict, Union
 
 from bluemira.base.error import PlotError
 from bluemira.base.look_and_feel import bluemira_warn
 from bluemira.utilities.tools import get_module
 
 
-DEFAULT = {}
-DEFAULT["flags"] = {"points": True, "wires": True, "faces": True}
-DEFAULT["poptions"] = {"s": 10, "facecolors": "blue", "edgecolors": "black"}
-DEFAULT["woptions"] = {"color": "black", "linewidth": "0.5"}
-DEFAULT["foptions"] = {"color": "red"}
-DEFAULT["plane"] = "xz"
-DEFAULT["palette"] = None
+# DEFAULT = {}
+# DEFAULT["flags"] = {"points": True, "wires": True, "faces": True}
+# DEFAULT["poptions"] = {"s": 10, "facecolors": "blue", "edgecolors": "black"}
+# DEFAULT["woptions"] = {"color": "black", "linewidth": "0.5"}
+# DEFAULT["foptions"] = {"color": "red"}
+# DEFAULT["plane"] = "xz"
+# DEFAULT["palette"] = None
 
 
 @dataclass
 class PlotOptions:
+    """
+    The options that are available for plotting objects in 3D
 
-    def __init__(self, **kwargs):
-        """
-        The options that are available for plotting objects in 3D
+    Parameters
+    ----------
+    flag_points: bool
+        If true, points are plotted. By default True.
+    flag_wires: bool
+        if true, wires are plotted. By default True.
+    flag_faces: bool
+        if true, faces are plotted. By default True.
+    poptions: Dict
+        dictionary with matplotlib options for points. By default  {"s": 10,
+        "facecolors": "blue", "edgecolors": "black"}
+    woptions: Dict
+        dictionary with matplotlib options for wires. By default {"color": "black",
+        "linewidth": "0.5"}
+    foptions: Dict
+        dictionary with matplotlib options for faces. By default {"color": "red"}
+    plane: [str, Plane]
+        The plane on which the object is projected for plotting. As string, possible
+        options are "xy", "xz", "yz". By default 'xz'.
+    palette:
+        palette
+    """
+    #
+    # def __init__(self, **kwargs):
+    #     self.options = DEFAULT.copy()
+    #     if kwargs:
+    #         for k in kwargs:
+    #             if k in self.options:
+    #                 self.options[k] = kwargs[k]
 
-        Parameters
-        ----------
-        flag_points: bool
-            If true, points are plotted. By default True.
-        flag_wires: bool
-            if true, wires are plotted. By default True.
-        flag_faces: bool
-            if true, faces are plotted. By default True.
-        poptions: Dict
-            dictionary with matplotlib options for points. By default  {"s": 10,
-            "facecolors": "blue", "edgecolors": "black"}
-        woptions: Dict
-            dictionary with matplotlib options for wires. By default {"color": "black",
-            "linewidth": "0.5"}
-        foptions: Dict
-            dictionary with matplotlib options for faces. By default {"color": "red"}
-        plane: [str, Plane]
-            The plane on which the object is projected for plotting. As string, possible
-            options are "xy", "xz", "yz". By default 'xz'.
-        palette:
-            palette
-        """
-        self.options = DEFAULT.copy()
-        if kwargs:
-            for k in kwargs:
-                if k in self.options:
-                    self.options[k] = kwargs[k]
+    flags: Dict = field(default_factory=lambda: {"points": True, "wires": True,
+                                                 "faces": True})
+    poptions: Dict = field(default_factory=lambda: {"s": 10, "facecolors": "blue",
+                                                    "edgecolors": "black"})
+    woptions: Dict = field(default_factory=lambda: {"color": "black",
+                                                    "linewidth": "0.5"})
+    foptions: Dict = field(default_factory=lambda: {"color": "red"})
+    plane: str = "xz"
+    palette: Union[str, None] = None
+    ndiscr: int = 100
+    byedges: bool = True
+
+    @property
+    def options(self):
+        return dataclasses.asdict(self)
 
 
 class Plotter(abc.ABC):
