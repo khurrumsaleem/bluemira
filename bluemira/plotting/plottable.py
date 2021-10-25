@@ -80,7 +80,7 @@ class Plotter(abc.ABC):
         self._options = PlotOptions() if val is None else val
 
     @abc.abstractmethod
-    def plot(self, obj, options: Optional[PlotOptions] = None) -> None:
+    def plot(self, obj, options: Optional[PlotOptions] = None, *args, **kwargs) -> None:
         """
         Plot the object by calling the plot function within the API.
 
@@ -92,7 +92,7 @@ class Plotter(abc.ABC):
             The options to use to plot the object, by default None in which case the
         default values for the PlotOptions class are used.
         """
-        self._plot_func(obj, options)
+        return self._plot_func(obj, options, *args, **kwargs)
 
 
 class Plottable:

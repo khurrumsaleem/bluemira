@@ -28,7 +28,6 @@ import matplotlib.pyplot as plt
 from typing import Optional, Union, List, Dict
 
 import bluemira.geometry as geo
-import bluemira.plotting as plotting
 from bluemira.geometry.base import BluemiraGeo
 from bluemira.geometry.wire import BluemiraWire
 from bluemira.geometry.face import BluemiraFace
@@ -44,6 +43,7 @@ from dataclasses import field
 def plot(
     parts: Union[BluemiraGeo, List[BluemiraGeo]],
     options: Optional[Union[PlotOptions, List[PlotOptions]]] = None,
+    ax = None, show: bool = True, block: bool = True,
 ):
     """
     The implementation of the display API for FreeCAD parts.
@@ -55,7 +55,6 @@ def plot(
     options: Optional[Union[PlotOptions, List[PlotOptions]]]
         The options to use to display the parts.
     """
-    print(f"Plot options: {options}")
     if not isinstance(parts, list):
         parts = [parts]
 
@@ -70,23 +69,23 @@ def plot(
             "there are parts to plot."
         )
 
-    ax = None
     for part, option in zip(parts, options):
+        print(f"option = {option.options}")
         if isinstance(part, geo.wire.BluemiraWire):
-            plotter = plotting.plotter.WirePlotter(
-                **option.options
-            )
+            plotter = WirePlotter(option)
         elif isinstance(part, geo.face.BluemiraFace):
-            plotter = plotting.plotter.FacePlotter(
-                **option.options
-            )
+            plotter = FacePlotter(option)
         else:
             raise PlotError(
                 f"{part} object cannot be plotted. No Plotter available for {type(part)}"
             )
-        ax = plotter(part, ax, False, False, ndiscr=100, byedges=True)
+        ax = plotter.plot(part, ax, False, False, option.options['ndiscr'],
+                          option.options['byedges'])
 
-    plotter.show_plot()
+    if show:
+        plotter.show_plot(block=block)
+
+    return ax
 
 @dataclasses.dataclass
 class MatplotlibOptions(PlotOptions):
@@ -134,7 +133,7 @@ class MatplotlibOptions(PlotOptions):
 # Note: when plotting points, it can happen that markers are not centered properly as
 # described in https://github.com/matplotlib/matplotlib/issues/11836
 
-class BasePlotter(Plotter):
+class BasePlotter():
     """
     Base utility plotting class
     """
@@ -143,41 +142,42 @@ class BasePlotter(Plotter):
         self._data = []  # data passed to the BasePlotter
         self._data_to_plot = []  # real data that is plotted
         self.ax = None
-        self._api = "bluemira.plotting._matplotlib"
-        super().__init__(options, self._api)
+        self.options = options
         self.set_plane(self.options.plane)
-        print(self.options)
 
-    @Plotter.options.setter
+    @property
+    def options(self):
+        return self._options
+
+    @options.setter
     def options(self, val: MatplotlibOptions) -> None:
-        print("Setting options in BasePlotter Matplotlib")
         self._options = MatplotlibOptions() if val is None else val
 
     @property
-    def plot_points(self):
+    def flag_points(self):
         """Set the flag to plot points"""
         return self.options.flags["points"]
 
-    @plot_points.setter
-    def plot_points(self, value):
+    @flag_points.setter
+    def flag_points(self, value):
         self.options.flags["points"] = value
 
     @property
-    def plot_wires(self):
+    def flag_wires(self):
         """Set the flag to plot wires"""
         return self.options.flags["wires"]
 
-    @plot_wires.setter
-    def plot_wires(self, value):
+    @flag_wires.setter
+    def flag_wires(self, value):
         self.options.flags["wires"] = value
 
     @property
-    def plot_faces(self):
+    def flag_faces(self):
         """Set the flag to plot faces"""
         return self.options.flags["faces"]
 
-    @plot_faces.setter
-    def plot_faces(self, value):
+    @flag_faces.setter
+    def flag_faces(self, value):
         self.options.flags["faces"] = value
 
     @property
@@ -325,7 +325,7 @@ class PointsPlotter(BasePlotter):
 
     def _check_options(self):
         # Check if nothing has to be plotted
-        if not self.plot_points:
+        if not self.flag_points:
             return False
         # check if no options have been specified
         if not self.poptions:
@@ -333,6 +333,7 @@ class PointsPlotter(BasePlotter):
         return True
 
     def _make_plot(self, points, *args, **kwargs):
+        print("Points _make_plot")
         self._data = points.tolist() if not isinstance(points, list) else points
         self._data_to_plot = points[0:2]
         self.ax.scatter(*self._data_to_plot, **self.poptions)
@@ -350,7 +351,7 @@ class WirePlotter(BasePlotter):
 
     def _check_options(self):
         # Check if nothing has to be plotted
-        if not self.plot_points and not self.plot_wires:
+        if not self.flag_points and not self.flag_wires:
             return False
 
         # check if no options have been specified
@@ -360,16 +361,17 @@ class WirePlotter(BasePlotter):
         return True
 
     def _make_plot(self, wire, ndiscr: int = 100, byedges: bool = True):
+        print("Wire _make_plot")
         new_wire = wire.deepcopy()
         new_wire.change_plane(self.options.plane)
         pointsw = new_wire.discretize(ndiscr=ndiscr, byedges=byedges).T
         self._data = pointsw.tolist()
         self._data_to_plot = pointsw[0:2]
 
-        if self.plot_wires:
+        if self.flag_wires:
             self.ax.plot(*self._data_to_plot, **self.options.woptions)
 
-        if self.plot_points:
+        if self.flag_points:
             pplotter = PointsPlotter(self.options)
             self.ax = pplotter(self._data_to_plot, self.ax, show=False)
 
@@ -384,7 +386,7 @@ class FacePlotter(BasePlotter):
 
     def _check_options(self):
         # Check if nothing has to be plotted
-        if not self.plot_points and not self.plot_wires and not self.plot_faces:
+        if not self.flag_points and not self.flag_wires and not self.flag_faces:
             return False
 
         # check if no options have been specified
@@ -402,7 +404,7 @@ class FacePlotter(BasePlotter):
 
         for w in face.boundary:
             wplotter = WirePlotter(self.options)
-            if not self.plot_wires and not self.plot_points:
+            if not self.flag_wires and not self.flag_points:
                 wplotter._make_data(w, ndiscr, byedges)
             else:
                 wplotter(
@@ -419,7 +421,7 @@ class FacePlotter(BasePlotter):
 
         self._data_to_plot = self._data[0:2]
 
-        if self.plot_faces and self.foptions:
+        if self.flag_faces and self.foptions:
             plt.fill(*self._data_to_plot, **self.foptions)
 
 

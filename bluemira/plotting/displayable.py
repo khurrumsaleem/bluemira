@@ -32,6 +32,10 @@ from bluemira.base.error import DisplayError
 from bluemira.base.look_and_feel import bluemira_warn
 from bluemira.utilities.tools import get_module
 
+from typing import Union, List
+
+from bluemira.geometry.base import BluemiraGeo
+
 
 @dataclass
 class DisplayOptions(abc.ABC):
@@ -157,3 +161,47 @@ class BasicDisplayer(Displayer):
             super().display(obj, options)
         except Exception as e:
             bluemira_warn(f"Unable to display object {obj} - {e}")
+
+class GeometryDisplayer(Displayer):
+    """
+    A Displayer class for displaying BluemiraGeo objects in 3D.
+    """
+
+    def display(
+        self,
+        geos: Union[BluemiraGeo, List[BluemiraGeo]],
+        options: Optional[Union[DisplayOptions, List[DisplayOptions]]] = None,
+    ) -> None:
+        """
+        Display a BluemiraGeo object using the underlying shape.
+
+        Parameters
+        ----------
+        geo: Union[BluemiraGeo, List[BluemiraGeo]]
+            The geometry to be displayed.
+        options: Optional[Union[DisplayOptions, List[DisplayOptions]]]
+            The options to use to display the geometry.
+            By default None, in which case the display_options assigned to the
+            BluemiraGeo object will be used.
+        """
+        if not isinstance(geos, list):
+            geos = [geos]
+
+        if options is None:
+            options = [DisplayOptions()] * len(geos)
+        elif not isinstance(options, list):
+            options = [options] * len(geos)
+
+        if len(options) == 1 and len(geos) > 1:
+            options *= len(geos)
+
+        if len(options) != len(geos):
+            raise DisplayError(
+                "Either a single display option or the same number of display options "
+                "geometries must be provided."
+            )
+
+        shapes = []
+        for geo in geos:
+            shapes += [geo._shape]
+        super().display(shapes, options)

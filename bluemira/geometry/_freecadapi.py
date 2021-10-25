@@ -26,8 +26,6 @@ Supporting functions for the bluemira geometry module.
 from __future__ import annotations
 
 import freecad  # noqa: F401
-import FreeCAD
-import FreeCADGui
 import Part
 from FreeCAD import Base
 
@@ -39,14 +37,7 @@ import math
 from typing import List, Optional, Union
 
 # import errors
-from bluemira.base.error import DisplayError
 from bluemira.geometry.error import GeometryError
-
-# import visualisation
-from pivy import coin, quarter
-from PySide2.QtWidgets import QApplication
-
-from bluemira.base.display import DisplayOptions
 
 
 # # =============================================================================
@@ -707,82 +698,6 @@ def make_compound(shapes):
     """
     compound = Part.makeCompound(shapes)
     return compound
-
-
-# =======================================================================================
-# Visualisation
-# =======================================================================================
-
-
-def _colourise(
-    node: coin.SoNode,
-    options: DisplayOptions,
-):
-    if isinstance(node, coin.SoMaterial):
-        node.ambientColor.setValue(coin.SbColor(*options.rgb))
-        node.diffuseColor.setValue(coin.SbColor(*options.rgb))
-        node.transparency.setValue(options.transparency)
-    for child in node.getChildren() or []:
-        _colourise(child, options)
-
-
-def display(
-    parts: Union[Part.Shape, List[Part.Shape]],
-    options: Optional[Union[DisplayOptions, List[DisplayOptions]]] = None,
-):
-    """
-    The implementation of the display API for FreeCAD parts.
-
-    Parameters
-    ----------
-    parts: Union[Part.Shape, List[Part.Shape]]
-        The parts to display.
-    options: Optional[Union[DisplayOptions, List[DisplayOptions]]]
-        The options to use to display the parts.
-    """
-    if not isinstance(parts, list):
-        parts = [parts]
-
-    if options is None:
-        options = [DisplayOptions()] * len(parts)
-    elif not isinstance(options, list):
-        options = [options] * len(parts)
-
-    if len(options) != len(parts):
-        raise DisplayError(
-            "If options for display are provided then there must be as many options as "
-            "there are parts to display."
-        )
-
-    app = QApplication.instance()
-    if app is None:
-        app = QApplication([])
-
-    if not hasattr(FreeCADGui, "subgraphFromObject"):
-        FreeCADGui.setupWithoutGUI()
-
-    doc = FreeCAD.newDocument()
-
-    root = coin.SoSeparator()
-
-    for part, option in zip(parts, options):
-        new_part = part.copy()
-        new_part.rotate((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), -90.0)
-        obj = doc.addObject("Part::Feature")
-        obj.Shape = new_part
-        doc.recompute()
-        subgraph = FreeCADGui.subgraphFromObject(obj)
-        _colourise(subgraph, option)
-        root.addChild(subgraph)
-
-    viewer = quarter.QuarterWidget()
-    viewer.setBackgroundColor(coin.SbColor(1, 1, 1))
-    viewer.setTransparencyType(coin.SoGLRenderAction.SCREEN_DOOR)
-    viewer.setSceneGraph(root)
-
-    viewer.setWindowTitle("Bluemira Display")
-    viewer.show()
-    app.exec_()
 
 
 # # =============================================================================

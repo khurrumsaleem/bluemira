@@ -24,3 +24,5 @@ Methods and classes for plot creation and manipulation
 """
 
 from . import plotter
+from . import displayable
+from . import plottable

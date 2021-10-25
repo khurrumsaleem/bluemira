@@ -221,7 +221,7 @@ class BasePlotter(ABC):
     def plot(self, obj, ax=None, show: bool = False, block: bool = False, *args,
              **kwargs):
         """2D plotting method"""
-        return self.__call__(obj, ax=None, show=False, block=False, *args, **kwargs)
+        return self.__call__(obj, ax=ax, show=show, block=block, *args, **kwargs)
 
 
 class PointsPlotter(BasePlotter):
@@ -300,12 +300,6 @@ class FacePlotter(BasePlotter):
     """
     Base utility plotting class for bluemira faces
     """
-
-    def __init__(self, **kwargs):
-        # set the plot options to DEFAULT. A copy is made in order to be able to
-        # change options without modifying the DEFAULT dictionary
-        self.options = DEFAULT.copy()
-        super().__init__(**{**self.options, **kwargs})
 
     def _check_obj(self, obj):
         if not isinstance(obj, BluemiraFace):

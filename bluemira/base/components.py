@@ -28,8 +28,8 @@ from anytree import NodeMixin, RenderTree
 import copy
 from typing import Any, List, Optional, Type, Union
 
-from bluemira.base.display import DisplayOptions, Displayable, Displayer
-from bluemira.base.plot import PlotOptions, Plottable, Plotter
+from bluemira.plotting.displayable import DisplayOptions, Displayable, Displayer
+from bluemira.plotting.plottable import PlotOptions, Plottable, Plotter
 
 from .error import ComponentError
 
