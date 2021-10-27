@@ -3,7 +3,7 @@
 # codes, to carry out a range of typical conceptual fusion reactor design
 # activities.
 #
-# Copyright (C) 2021 M. Coleman, J. Cook, F. Franza, I. Maione, S. McIntosh, J. Morris,
+# Copyright (C) 2021 M. Coleman, J. Cook, F. Franza, I.A. Maione, S. McIntosh, J. Morris,
 #                    D. Short
 #
 # bluemira is free software; you can redistribute it and/or
@@ -29,7 +29,6 @@ from numba.types import intc, CPointer, float64
 from scipy import LowLevelCallable
 from scipy.integrate import quad, nquad, IntegrationWarning
 
-from bluemira.base.look_and_feel import bluemira_warn
 from bluemira.magnetostatics.error import MagnetostaticsError
 from bluemira.geometry._deprecated_loop import Loop
 
@@ -107,7 +106,6 @@ def process_loop_array(shape):
         shape = shape.xyz.T
 
     elif isinstance(shape, loop.Loop):
-        bluemira_warn("BLUEPRINT.geometry.loop::Loop is deprecated.")
         shape = shape.xyz.T
 
     elif isinstance(shape, np.ndarray):
