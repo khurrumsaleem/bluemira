@@ -1083,8 +1083,8 @@ class SegmentedThermalShield(ReactorSystem):
         second stage: get values from process as well as BP i.e. closest PF coil etc.
         """
         z = 2
-        self.geom["Equatorial port"] = Loop(x=[5, 15, 15, 5], z=[z, z, -z, -z])
-        self.geom["Equatorial port"].close()
+        self.geom["Equatorial port TS"] = Loop(x=[5, 15, 15, 5], z=[z, z, -z, -z])
+        self.geom["Equatorial port TS"].close()
 
     @property
     def xz_plot_loop_names(self) -> list:

@@ -224,8 +224,8 @@ class SegmentedThermalShieldCAD(OnionCAD, ComponentCAD):
                 ["outboard_thermal_shield", thermal_shield["Outboard profile"]],
             ]
 
-        if "Equatorial port" in thermal_shield:
-            eq = thermal_shield["Equatorial port"]
+        if "Equatorial port TS" in thermal_shield:
+            eq = thermal_shield["Equatorial port TS"]
             eq = make_mixed_face(eq)
             eq_cad = extrude(eq, length=3, axis="y")
 
@@ -244,7 +244,7 @@ class SegmentedThermalShieldCAD(OnionCAD, ComponentCAD):
             profile_vv = revolve(profile_vv, None, 360 / n_TF)
 
             # Add the TS shapes
-            if "Equatorial port" in thermal_shield:
+            if "Equatorial port TS" in thermal_shield:
                 vvports = boolean_cut(profile_vv, eq_cad)
                 self.add_shape(vvports, name=name)
             else:
