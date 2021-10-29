@@ -40,6 +40,11 @@ from typing import Union
 from bluemira.geometry.error import GeometryError
 
 
+apiWire = Part.Wire
+apiFace = Part.Face
+apiShell = Part.Shell
+apiSolid = Part.Solid
+
 # # =============================================================================
 # # Array, List, Vector, Point manipulation
 # # =============================================================================
@@ -762,3 +767,98 @@ def change_plane(geo, plane):
     new_base = plane.multVec(geo.Placement.Base)
     new_placement.Base = new_base
     geo.Placement = new_placement
+
+
+# # =============================================================================
+# # Boolean operations
+# # =============================================================================
+def fuse(shapes):
+    """
+    Fuse two or more shapes together. Internal splitter are removed.
+
+    Parameters
+    ----------
+    shapes: Iterable
+        List of FreeCAD shape objects to be fused together. All the objects in the
+        list must be of the same type.
+
+    Returns
+    -------
+    fuse_shape:
+        Result of the boolean operation.
+
+    Raises
+    ------
+    error: GeometryError
+        In case the boolean operation fails.
+    """
+    if isinstance(shapes, list):
+        if len(shapes) > 1:
+            # check that all the shapes are of the same time
+            _type = type(shapes[0])
+            check = all(isinstance(s, _type) for s in shapes)
+            if check:
+                try:
+                    if _type == Part.Wire:
+                        merged_shape = shapes[0].fuse(shapes[1:], True)
+                        return merged_shape
+                    elif _type == Part.Face:
+                        merged_shape = shapes[0].fuse(shapes[1:])
+                        merged_shape = merged_shape.removeSplitter()
+                        if len(merged_shape.Faces) > 1 :
+                            raise GeometryError(f"Fuse boolean operation on {shapes} "
+                                                f"gives more that one face.")
+                        else:
+                            return merged_shape.Faces[0]
+                    else:
+                        raise ValueError(f"Fuse function still not implemented for "
+                                         f"{_type} instances.")
+                except:
+                    raise GeometryError(f"Fuse operation fails. {sys.exec_info()[0]}")
+            else:
+                raise ValueError(f"All instances in {shapes} must be of the same type.")
+        else:
+            raise ValueError("At least 2 shapes must be given")
+    else:
+        raise ValueError(f"{shapes} is not a list.")
+
+
+def cut(shape, tools):
+    """
+    Difference of shape and a given (list of) topo shape cut(tools)
+
+    Parameters
+    ----------
+    shape: FreeCAD shape
+        the reference object
+    tools: Iterable
+        List of FreeCAD shape objects to be used as tools.
+
+    Returns
+    -------
+    cut_shape:
+        Result of the boolean operation.
+
+    Raises
+    ------
+    error: GeometryError
+        In case the boolean operation fails.
+    """
+    _type = type(shape)
+
+    if not isinstance(tools, list):
+        tools = [tools]
+
+    cut_shape = shape.cut(tools)
+
+    if _type == Part.Wire:
+        output = cut_shape.Wires
+    elif _type == Part.Face:
+        output = cut_shape.Faces
+    elif _type == Part.Shell:
+        output = cut_shape.Shells
+    elif _type == Part.Solid:
+        output = cut_shape.Solid
+    else:
+        raise ValueError(f"Cut function not implemented for {_type} objects.")
+    return output
