@@ -1082,8 +1082,28 @@ class SegmentedThermalShield(ReactorSystem):
         first stage: crude brute force with rectangle shape
         second stage: get values from process as well as BP i.e. closest PF coil etc.
         """
-        z = 2
-        self.geom["Equatorial port TS"] = Loop(x=[5, 15, 15, 5], z=[z, z, -z, -z])
+        # pf_coil_cls = self.get_subsystem_class("PF")
+        # self.PF = pf_coil_cls(self.params)
+        b_z = []
+        t_z = []
+        l_x = []
+        r_x = []
+
+        for pf_coils in self.inner_pf_list:
+            bot_z = np.amin(pf_coils.z_corner)
+            top_z = np.amax(pf_coils.z_corner)
+            left_x = np.amin(pf_coils.x_corner)
+            right_x = np.amax(pf_coils.x_corner)
+            b_z.append(bot_z)
+            t_z.append(top_z)
+            l_x.append(left_x)
+            r_x.append(right_x)
+        # print(b_z, t_z, l_x, r_x)
+        # print()
+        self.geom["Equatorial port TS"] = Loop(
+            x=[l_x[0], l_x[0] + 10, l_x[0] + 10, l_x[0]],
+            z=[b_z[0] - 2, b_z[0] - 2, b_z[0] - 4, b_z[0] - 4],
+        )  # Loop(x=[5, 15, 15, 5], z=[z, z, -z, -z])
         self.geom["Equatorial port TS"].close()
 
     @property
