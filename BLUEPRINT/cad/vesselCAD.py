@@ -210,11 +210,6 @@ class SegmentedVesselCAD(OnionCAD, ComponentCAD):
             ["outboard_vaccum_vessel", vaccum_vessel["Outboard profile"]],
         ]
 
-        if "Equatorial port VV" in thermal_shield:
-            eq = vaccum_vessel["Equatorial port VV"]
-            eq = make_mixed_face(eq)
-            eq_cad = extrude(eq, length=3, axis="y")
-
         for name, profile in loop_list:
             # First get the VVTS shape and simplify it
             # Making sure the inner-outter loops are Ok
@@ -230,11 +225,7 @@ class SegmentedVesselCAD(OnionCAD, ComponentCAD):
             profile_vv = revolve(profile_vv, None, 360 / n_TF)
 
             # Add the TS shapes
-            if "Equatorial port VV" in vaccum_vessel:
-                vvports = boolean_cut(profile_vv, eq_cad)
-                self.add_shape(vvports, name=name)
-            else:
-                self.add_shape(profile_vv, name=name)
+            self.add_shape(profile_vv, name=name)
 
 
 if __name__ == "__main__":

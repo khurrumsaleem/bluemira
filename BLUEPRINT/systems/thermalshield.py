@@ -603,6 +603,9 @@ class SegmentedThermalShield(ReactorSystem):
         ['tk_cryo_ts', 'Cryo TS thickness', 0.10, 'm', None, 'Input'],
         ['r_cryo_ts', 'Radius of outboard cryo TS', 11, 'm', None, 'Input'],
         ['z_cryo_ts', 'Half height of outboard cryo TS', 14, 'm', None, 'Input'],
+        ['x_eq_port', 'Distance in the x for the port cutter', 10.0, 'm', None, 'Input'],
+        ['z_eq_port', 'Distance in the z for the port cutter', 2.0, 'm', None, 'Input'],
+        # ['w_port', 'width of the cutter', 2.0, 'm', None, 'Input'],
     ]
     # fmt: on
     CADConstructor = SegmentedThermalShieldCAD
@@ -1051,7 +1054,7 @@ class SegmentedThermalShield(ReactorSystem):
         """
         Builds the cryostat thermal shield poloidal 2D cross-section loop
 
-        Parameters
+        Arguments
         ----------
         r_cryo_ts: float
             radius of the tin can cryo thermal shield
@@ -1076,35 +1079,46 @@ class SegmentedThermalShield(ReactorSystem):
         self.params.z_cryo_ts = z_cryo_ts
         self.params.tk_cryo_ts = tk_cryo_ts
 
-    def build_eq_port(self):  # , z_eq_port: float):
+    def build_eq_port(self, x_eq_port: float, z_eq_port: float):
         """
         Creates loop object to extrude a cutter with.
-        first stage: crude brute force with rectangle shape
-        second stage: get values from process as well as BP i.e. closest PF coil etc.
+
+        Arguments
+        ----------
+        x_eq_port: length of the cutter in the x direction from the corner of the inner PF coil
+        z_eq_p ort: height of the cutter in the z direction from the corner of the inner PF coil
         """
-        # pf_coil_cls = self.get_subsystem_class("PF")
-        # self.PF = pf_coil_cls(self.params)
         b_z = []
         t_z = []
         l_x = []
-        r_x = []
+        if len(self.inner_pf_list) > 0:
+            for pf_coils in self.inner_pf_list:
+                b_z.append(np.amin(pf_coils.z_corner))
+                t_z.append(np.amax(pf_coils.z_corner))
+                l_x.append(np.amin(pf_coils.x_corner))
+            self.geom["U Equatorial port TS"] = Loop(
+                x=[l_x[0], l_x[0] + x_eq_port, l_x[0] + x_eq_port, l_x[0]],
+                z=[
+                    b_z[0] - z_eq_port,
+                    b_z[0] - z_eq_port,
+                    b_z[0] - (z_eq_port + 2),
+                    b_z[0] - (z_eq_port + 2),
+                ],
+            )
+            self.geom["L Equatorial port TS"] = Loop(
+                x=[l_x[1], l_x[1] + x_eq_port, l_x[1] + x_eq_port, l_x[1]],
+                z=[
+                    t_z[1] + z_eq_port,
+                    t_z[1] + z_eq_port,
+                    t_z[1] + (z_eq_port + 2),
+                    t_z[1] + (z_eq_port + 2),
+                ],
+            )
+            self.geom["U Equatorial port TS"].close()
+            self.geom["L Equatorial port TS"].close()
 
-        for pf_coils in self.inner_pf_list:
-            bot_z = np.amin(pf_coils.z_corner)
-            top_z = np.amax(pf_coils.z_corner)
-            left_x = np.amin(pf_coils.x_corner)
-            right_x = np.amax(pf_coils.x_corner)
-            b_z.append(bot_z)
-            t_z.append(top_z)
-            l_x.append(left_x)
-            r_x.append(right_x)
-        # print(b_z, t_z, l_x, r_x)
-        # print()
-        self.geom["Equatorial port TS"] = Loop(
-            x=[l_x[0], l_x[0] + 10, l_x[0] + 10, l_x[0]],
-            z=[b_z[0] - 2, b_z[0] - 2, b_z[0] - 4, b_z[0] - 4],
-        )  # Loop(x=[5, 15, 15, 5], z=[z, z, -z, -z])
-        self.geom["Equatorial port TS"].close()
+        self.params.x_eq_port = x_eq_port
+        self.params.z_eq_port = z_eq_port
 
     @property
     def xz_plot_loop_names(self) -> list:

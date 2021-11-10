@@ -202,6 +202,7 @@ class SegmentedThermalShieldCAD(OnionCAD, ComponentCAD):
             "SegmetThermal shield",
             thermal_shield.geom,
             thermal_shield.params.n_TF,
+            # thermal_shield.params.w_port,
             palette=[BLUE["TS"]],
             **kwargs
         )
@@ -211,7 +212,8 @@ class SegmentedThermalShieldCAD(OnionCAD, ComponentCAD):
         Build the CAD for the SegmentedThermalShield
         """
         thermal_shield, n_TF = self.args
-
+        # print(thermal_shield.params.w_port)
+        w_port = 3
         if "Cryostat TS" in thermal_shield:
             loop_list = [
                 ["inboard_thermal_shield", thermal_shield["Inboard profile"]],
@@ -224,10 +226,13 @@ class SegmentedThermalShieldCAD(OnionCAD, ComponentCAD):
                 ["outboard_thermal_shield", thermal_shield["Outboard profile"]],
             ]
 
-        if "Equatorial port TS" in thermal_shield:
-            eq = thermal_shield["Equatorial port TS"]
-            eq = make_mixed_face(eq)
-            eq_cad = extrude(eq, length=3, axis="y")
+        if "U Equatorial port TS" or "L Equatorial port TS" in thermal_shield:
+            equ = thermal_shield["U Equatorial port TS"]
+            equ = make_mixed_face(equ)
+            equ_cad = extrude(equ, length=w_port, axis="y")
+            eql = thermal_shield["L Equatorial port TS"]
+            eql = make_mixed_face(eql)
+            eql_cad = extrude(eql, length=w_port, axis="y")
 
         for name, profile in loop_list:
             # First get the VVTS shape and simplify it
@@ -244,9 +249,10 @@ class SegmentedThermalShieldCAD(OnionCAD, ComponentCAD):
             profile_vv = revolve(profile_vv, None, 360 / n_TF)
 
             # Add the TS shapes
-            if "Equatorial port TS" in thermal_shield:
-                vvports = boolean_cut(profile_vv, eq_cad)
-                self.add_shape(vvports, name=name)
+            if "U Equatorial port TS" or "L Equatorial port TS" in thermal_shield:
+                vvportsu = boolean_cut(profile_vv, equ_cad)
+                vvportsl = boolean_cut(vvportsu, eql_cad)
+                self.add_shape(vvportsl, name=name)
             else:
                 self.add_shape(profile_vv, name=name)
 

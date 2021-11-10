@@ -306,6 +306,11 @@ class Configuration(ConfigurationSchema, ParameterFrame):
         ['r_cryo_ts', 'Radius of outboard cryo TS', 8, 'm', None, 'Input'],
         ['z_cryo_ts', 'Half height of outboard cryo TS', 8, 'm', None, 'Input'],
 
+        # Ports
+        ['x_eq_port', 'Distance in the x for the port cutter', 10.0, 'm', None, 'Input'],
+        ['z_eq_port', 'Distance in the z for the port cutter', 2.0, 'm', None, 'Input'],
+        # ['w_port', 'width of the cutter', 2.0, 'm', None, 'Input'],
+        
         # Radiation shield
         ['n_rs_lab', 'Number of radiation shield labyrinth levels', 4, 'N/A', None, 'Input'],
         ['rs_l_d', 'Radiation shield labyrinth delta', 0.6, 'm', 'Thickness of a radiation shield penetration neutron labyrinth', 'Input'],
