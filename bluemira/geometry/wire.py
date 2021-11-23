@@ -44,6 +44,8 @@ from bluemira.geometry._freecadapi import (
 # import mathematical library
 import numpy
 
+from copy import deepcopy
+
 # import from error
 from bluemira.geometry.error import NotClosedWire, MixedOrientationWireError
 
@@ -52,8 +54,12 @@ class BluemiraWire(BluemiraGeo):
     """Bluemira Wire class."""
 
     def __init__(self, boundary, label: str = ""):
-        boundary_classes = [self.__class__, apiWire]
-        super().__init__(boundary, label, boundary_classes)
+        self._boundary_classes = [self.__class__, apiWire]
+        boundary = self._check_boundary(boundary)
+
+        self.boundary = [deepcopy(b) for b in boundary]
+        self.label = label
+
         self._check_orientations()
 
         # connection variable with BLUEPRINT Loop
@@ -87,7 +93,10 @@ class BluemiraWire(BluemiraGeo):
     @property
     def _shape(self) -> apiWire:
         """apiWire: shape of the object as a single wire"""
-        return self._check_reverse(apiWire(self._wires))
+        wire = apiWire(self._wires)
+        if wire.Orientation != self._orientation:
+            wire.reverse()
+        return wire
 
     @property
     def _wires(self) -> List[apiWire]:
@@ -96,7 +105,11 @@ class BluemiraWire(BluemiraGeo):
         for o in self.boundary:
             if isinstance(o, apiWire):
                 for w in o.Wires:
-                    wires += [apiWire(w.OrderedEdges)]
+
+                    wire = apiWire(w.OrderedEdges)
+                    if wire.Orientation != self._orientation:
+                        wire.reverse()
+                    wires += [wire]
             else:
                 wires += o._wires
         return wires
@@ -120,7 +133,8 @@ class BluemiraWire(BluemiraGeo):
         This function modifies the object boundary.
         """
         if not self.is_closed():
-            closure = wire_closure(self._shape)
+            closure = deepcopy(wire_closure(self._shape))
+            closure.Orientation = self._orientation
             if isinstance(self.boundary[0], apiWire):
                 self.boundary.append(closure)
             else:

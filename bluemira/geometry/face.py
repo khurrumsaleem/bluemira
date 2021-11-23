@@ -44,7 +44,7 @@ class BluemiraFace(BluemiraGeo):
     def __init__(self, boundary, label: str = ""):
         boundary_classes = [BluemiraWire]
         super().__init__(boundary, label, boundary_classes)
-        self._create_face()
+        # self._create_face()
 
     @staticmethod
     def _converter(func):
@@ -85,12 +85,17 @@ class BluemiraFace(BluemiraGeo):
             f"Only {self._boundary_classes} objects can be used for {self.__class__}"
         )
 
-    def _create_face(self):
-        """Create the primitive face"""
+    @property
+    def _shape(self) -> cadapi.apiFace:
+        """Part.Face: shape of the object as a primitive face"""
         external: BluemiraWire = self.boundary[0]
-        face = cadapi.apiFace(external._shape)
+        wire = external._shape
+        # if wire.Orientation == self.boundary[0]._orientation:
+        #     wire.reverse()
+        face = cadapi.apiFace(wire)
 
         if len(self.boundary) > 1:
+            print("MULTI BOUNDARY FACE")
             fholes = [cadapi.apiFace(h._shape) for h in self.boundary[1:]]
             face = face.cut(fholes)
             if len(face.Faces) == 1:
@@ -100,22 +105,6 @@ class BluemiraFace(BluemiraGeo):
 
         return self._check_reverse(face)
 
-    @property
-    def _shape(self) -> cadapi.apiFace:
-        """Part.Face: shape of the object as a primitive face"""
-        return self._create_face()
-
-    @property
-    def _wires(self) -> List[cadapi.apiWire]:
-        """list(Part.Wire): list of wires of which the shape consists of."""
-        wires = []
-        for o in self.boundary:
-            if isinstance(o, cadapi.apiWire):
-                wires += o.Wires
-            else:
-                wires += o._wires
-        return wires
-
     @classmethod
     def _create(cls, obj: cadapi.apiFace, label="") -> BluemiraFace:
         if isinstance(obj, cadapi.apiFace):
@@ -124,10 +113,11 @@ class BluemiraFace(BluemiraGeo):
             for w in obj.Wires:
                 w_orientation = w.Orientation
                 bm_wire = BluemiraWire(w)
-                bm_wire._orientation = w_orientation
+                # bm_wire._orientation = w_orientation
                 bmwires += [bm_wire]
             bmface = cls(bmwires, label=label)
             bmface._orientation = orientation
+
             return bmface
 
         raise TypeError(f"Only Part.Face objects can be used to create a {cls} instance")

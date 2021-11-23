@@ -81,14 +81,14 @@ class TestGeometry:
         center = [1, 0, 3]
         axis = [0, 1, 0]
         bm_circle = make_circle(radius=radius, center=center, axis=axis)
-        assert bm_circle.length == 2 * math.pi * radius
+        assert np.isclose(bm_circle.length, 2 * math.pi * radius)
 
     def test_make_circle_arc_3P(self):  # noqa N802
         p1 = [0, 0, 0]
         p2 = [1, 1, 0]
         p3 = [2, 0, 0]
         bm_circle = make_circle_arc_3P(p1, p2, p3)
-        assert bm_circle.length == math.pi
+        assert np.isclose(bm_circle.length, math.pi)
 
     def test_make_ellipse(self):
         major_radius = 5.0
@@ -420,10 +420,10 @@ class TestGeometry:
         fc_faces = fc_shape.Shells[0].Faces
         for f, fc in zip(faces, fc_faces):
             assert f.area == fc.Area
-            assert f._orientation.value == fc.Orientation
+            assert f._orientation == fc.Orientation
             for w, fw in zip(f.boundary, fc.Wires):
                 assert w.length == fw.Length
-                assert w._orientation.value == fw.Orientation
+                assert w._orientation == fw.Orientation
 
     def test_cut_solids(self):
         face = BluemiraFace(
@@ -478,6 +478,22 @@ class TestGeometry:
         assert result.is_valid()
         assert fc_result.isValid()
         self._compare_fc_bm(fc_result, result)
+
+    def test_fuse_solids2(self):
+        profile = make_polygon(
+            [[0.5, 0, -0.5], [1.5, 0, -0.5], [1.5, 0, 0.5], [0.5, 0, 0.5]], closed=True
+        )
+        face = BluemiraFace(profile.deepcopy())
+        solid1 = extrude_shape(face.deepcopy(), (0, 1, 0), label="positive")
+
+        profile.translate((0.5, 0.5, 0.0))
+        face2 = BluemiraFace(profile)
+
+        solid2 = extrude_shape(face2, (0, -1, 0), label="negative")
+
+        solid3 = boolean_fuse([solid1, solid2], label="fuse")
+        assert solid3.volume > 0.0
+        assert np.isclose(solid3.volume, 1.75)
 
 
 class TestShapeTransformations:

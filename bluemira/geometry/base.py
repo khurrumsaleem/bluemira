@@ -29,6 +29,7 @@ import enum
 
 # import for abstract class
 from abc import ABC, abstractmethod
+from inspect import Attribute
 
 # import freecad api
 from . import _freecadapi
@@ -36,7 +37,7 @@ from . import _freecadapi
 import copy
 
 
-class _Orientation(enum.Enum):
+class _Orientation:  # (enum.Enum):
     FORWARD = "Forward"
     REVERSED = "Reversed"
 
@@ -63,7 +64,7 @@ class BluemiraGeo(ABC):
         self._boundary_classes = boundary_classes
         self.boundary = boundary
         self.label = label
-        self.__orientation = _Orientation("Forward")
+        self.__orientation = _Orientation.FORWARD
 
     @property
     def _orientation(self):
@@ -71,13 +72,25 @@ class BluemiraGeo(ABC):
 
     @_orientation.setter
     def _orientation(self, value):
-        self.__orientation = _Orientation(value)
+        self.__orientation = value
 
     def _check_reverse(self, obj):
-        if self._orientation != _Orientation(obj.Orientation):
+        if self._orientation != obj.Orientation:
             obj.reverse()
-            self._orientation = _Orientation(obj.Orientation)
         return obj
+
+    def _reverse(self):
+        if self._orientation == _Orientation.FORWARD:
+            self._orientation = _Orientation.REVERSED
+        elif self._orientation == _Orientation.REVERSED:
+            self._orientation = _Orientation.FORWARD
+        else:
+            raise ValueError
+        for obj in self.boundary:
+            try:
+                obj._reverse()
+            except AttributeError:
+                pass  # obj.reverse()
 
     @staticmethod
     def _converter(func):

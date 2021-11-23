@@ -20,6 +20,7 @@
 # License along with bluemira; if not, see <https://www.gnu.org/licenses/>.
 
 import pytest
+import numpy as np
 
 import bluemira.geometry._freecadapi as cadapi
 from bluemira.geometry.error import MixedOrientationWireError
@@ -67,13 +68,13 @@ class TestOrientation:
         bm_face = BluemiraFace._create(face)
 
         assert bm_face._shape.Orientation == face.Orientation
-        assert bm_face.area == face.Area
+        assert np.isclose(bm_face.area, face.Area)
 
         face.reverse()
         bm_face = BluemiraFace._create(face)
 
         assert bm_face._shape.Orientation == face.Orientation
-        assert bm_face.area == face.Area
+        assert np.isclose(bm_face.area, face.Area)
 
     def test_bad_wire(self):
         wire_1 = cadapi.make_polygon([[0, 0, 0], [1, 0, 0]])
