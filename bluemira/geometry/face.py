@@ -113,7 +113,7 @@ class BluemiraFace(BluemiraGeo):
             for w in obj.Wires:
                 w_orientation = w.Orientation
                 bm_wire = BluemiraWire(w)
-                # bm_wire._orientation = w_orientation
+                bm_wire._orientation = w_orientation
                 bmwires += [bm_wire]
             bmface = cls(bmwires, label=label)
             bmface._orientation = orientation
