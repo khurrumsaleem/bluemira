@@ -90,8 +90,8 @@ class BluemiraFace(BluemiraGeo):
         """Part.Face: shape of the object as a primitive face"""
         external: BluemiraWire = self.boundary[0]
         wire = external._shape
-        # if wire.Orientation == self.boundary[0]._orientation:
-        #     wire.reverse()
+        # assert external._orientation == wire.Orientation
+
         face = cadapi.apiFace(wire)
 
         if len(self.boundary) > 1:

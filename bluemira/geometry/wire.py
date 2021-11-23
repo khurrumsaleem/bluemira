@@ -57,7 +57,14 @@ class BluemiraWire(BluemiraGeo):
         self._boundary_classes = [self.__class__, apiWire]
         boundary = self._check_boundary(boundary)
 
-        self.boundary = [deepcopy(b) for b in boundary]
+        copy_boundary = []
+        for b in boundary:
+            if isinstance(b, apiWire):
+                copy_boundary.append(deepcopy(b))
+            else:
+                copy_boundary.append(b)
+
+        self.boundary = copy_boundary
         self.label = label
 
         self._check_orientations()
@@ -71,7 +78,7 @@ class BluemiraWire(BluemiraGeo):
             if isinstance(boundary, apiWire):
                 orient = boundary.Orientation
             elif isinstance(boundary, self.__class__):
-                orient = boundary._shape.Orientation
+                orient = boundary._orientation
             orientations.append(orient)
 
         if orientations.count(orientations[0]) != len(orientations):
@@ -90,13 +97,27 @@ class BluemiraWire(BluemiraGeo):
 
         return wrapper
 
+    def _check_reverse(self, obj):
+        if self._orientation != obj.Orientation:
+            obj.reverse()
+            new_edges = []
+            replace = []
+            for edge in obj.SubShapes:
+                new_edge = deepcopy(edge)
+                new_edge.reverse()
+                new_edges.append(new_edge)
+                replace.append((edge, new_edge))
+
+            obj.replaceShape(replace)
+
+        return obj
+
     @property
     def _shape(self) -> apiWire:
         """apiWire: shape of the object as a single wire"""
         wire = apiWire(self._wires)
-        if wire.Orientation != self._orientation:
-            wire.reverse()
-        return wire
+
+        return self._check_reverse(wire)
 
     @property
     def _wires(self) -> List[apiWire]:
@@ -104,11 +125,12 @@ class BluemiraWire(BluemiraGeo):
         wires = []
         for o in self.boundary:
             if isinstance(o, apiWire):
-                for w in o.Wires:
+                for w in deepcopy(o.Wires):
 
                     wire = apiWire(w.OrderedEdges)
-                    if wire.Orientation != self._orientation:
-                        wire.reverse()
+                    wire.Orientation = self._orientation
+                    # if wire.Orientation != self._orientation:
+                    #    wire = wire.reversed()
                     wires += [wire]
             else:
                 wires += o._wires
@@ -134,7 +156,8 @@ class BluemiraWire(BluemiraGeo):
         """
         if not self.is_closed():
             closure = deepcopy(wire_closure(self._shape))
-            closure.Orientation = self._orientation
+            if closure.Orientation != self._orientation:
+                closure.reverse()
             if isinstance(self.boundary[0], apiWire):
                 self.boundary.append(closure)
             else:
