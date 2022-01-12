@@ -310,7 +310,7 @@ class Configuration(ConfigurationSchema, ParameterFrame):
         # Ports
         ['x_eq_port', 'Distance in the x for the port cutter', 10.0, 'm', None, 'Input'],
         ['z_eq_port', 'Distance in the z for the port cutter', 2.0, 'm', None, 'Input'],
-        # ['w_port', 'width of the cutter', 2.0, 'm', None, 'Input'],
+        ['w_port', 'width of the cutter', 2.0, 'm', None, 'Input'],
         
         # Radiation shield
         ['n_rs_lab', 'Number of radiation shield labyrinth levels', 4, 'N/A', None, 'Input'],

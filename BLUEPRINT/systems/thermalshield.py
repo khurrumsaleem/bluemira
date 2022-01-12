@@ -605,7 +605,7 @@ class SegmentedThermalShield(ReactorSystem):
         ['z_cryo_ts', 'Half height of outboard cryo TS', 14, 'm', None, 'Input'],
         ['x_eq_port', 'Distance in the x for the port cutter', 10.0, 'm', None, 'Input'],
         ['z_eq_port', 'Distance in the z for the port cutter', 2.0, 'm', None, 'Input'],
-        # ['w_port', 'width of the cutter', 2.0, 'm', None, 'Input'],
+        ['w_port', 'width of the cutter', 2.0, 'm', None, 'Input'],
     ]
     # fmt: on
     CADConstructor = SegmentedThermalShieldCAD
@@ -1055,7 +1055,7 @@ class SegmentedThermalShield(ReactorSystem):
         Builds the cryostat thermal shield poloidal 2D cross-section loop
 
         Arguments
-        ----------
+        ---------
         r_cryo_ts: float
             radius of the tin can cryo thermal shield
         z_cryo_ts: float
@@ -1083,10 +1083,12 @@ class SegmentedThermalShield(ReactorSystem):
         """
         Creates loop object to extrude a cutter with.
 
-        Arguments
-        ----------
-        x_eq_port: length of the cutter in the x direction from the corner of the inner PF coil
-        z_eq_p ort: height of the cutter in the z direction from the corner of the inner PF coil
+        Parameters
+        ---------_
+        x_eq_port: float
+            Length of the cutter in the x direction from the corner of the inner PF coil
+        z_eq_p ort: float
+            Height of the cutter in the z direction from the corner of the inner PF coil
         """
         b_z = []
         t_z = []

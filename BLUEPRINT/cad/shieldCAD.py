@@ -202,7 +202,7 @@ class SegmentedThermalShieldCAD(OnionCAD, ComponentCAD):
             "SegmetThermal shield",
             thermal_shield.geom,
             thermal_shield.params.n_TF,
-            # thermal_shield.params.w_port,
+            thermal_shield.params.w_port,
             palette=[BLUE["TS"]],
             **kwargs
         )
@@ -211,9 +211,9 @@ class SegmentedThermalShieldCAD(OnionCAD, ComponentCAD):
         """
         Build the CAD for the SegmentedThermalShield
         """
-        thermal_shield, n_TF = self.args
+        thermal_shield, n_TF, w_port = self.args
         # print(thermal_shield.params.w_port)
-        w_port = 3
+        # w_port = 3
         if "Cryostat TS" in thermal_shield:
             loop_list = [
                 ["inboard_thermal_shield", thermal_shield["Inboard profile"]],
@@ -226,7 +226,10 @@ class SegmentedThermalShieldCAD(OnionCAD, ComponentCAD):
                 ["outboard_thermal_shield", thermal_shield["Outboard profile"]],
             ]
 
-        if "U Equatorial port TS" or "L Equatorial port TS" in thermal_shield:
+        if all(
+            port_key in thermal_shield
+            for port_key in ["U Equatorial port TS", "L Equatorial port TS"]
+        ):
             equ = thermal_shield["U Equatorial port TS"]
             equ = make_mixed_face(equ)
             equ_cad = extrude(equ, length=w_port, axis="y")
@@ -249,7 +252,10 @@ class SegmentedThermalShieldCAD(OnionCAD, ComponentCAD):
             profile_vv = revolve(profile_vv, None, 360 / n_TF)
 
             # Add the TS shapes
-            if "U Equatorial port TS" or "L Equatorial port TS" in thermal_shield:
+            if all(
+                port_key in thermal_shield
+                for port_key in ["U Equatorial port TS", "L Equatorial port TS"]
+            ):
                 vvportsu = boolean_cut(profile_vv, equ_cad)
                 vvportsl = boolean_cut(vvportsu, eql_cad)
                 self.add_shape(vvportsl, name=name)
