@@ -218,7 +218,7 @@ build_config = {
         "runmode": "run",  # ["run", "read", "mock"]
     },
     "TF Coils": {
-        "runmode": "run",  # ["run", "read", "mock"]
+        "runmode": "read",  # ["run", "read", "mock"]
         "param_class": "TripleArc",
         "variables_map": {
             "x1": {
@@ -232,6 +232,10 @@ build_config = {
             "f2": {
                 "value": 4,
                 "lower_bound": 4,
+            },
+            "dz": {
+                "value": 0,
+                "fixed": True,
             },
         },
         "algorithm_name": "COBYLA",

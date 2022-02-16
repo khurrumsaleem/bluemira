@@ -226,13 +226,13 @@ class PlasmaBuilder(Builder):
         else:
             shape = TripleArc(
                 {
-                    "x1": {"value": rin},
-                    "dz": {"value": -0.3},
-                    "sl": {"value": 5.4},
-                    "f1": {"value": 4},
-                    "f2": {"value": 5},
-                    "a1": {"value": 6.02},
-                    "a2": {"value": 85.05},
+                    "x1": {"value": 3.9904249999999992},
+                    "dz": {"value": 0},
+                    "sl": {"value": 5.0},
+                    "f1": {"value": 6.341437033452866},
+                    "f2": {"value": 4.503324799208088},
+                    "a1": {"value": 39.02153311481002},
+                    "a2": {"value": 59.18782068162684},
                 }
             )
 
@@ -241,11 +241,12 @@ class PlasmaBuilder(Builder):
             tf_boundary.rotate(
                 tf_boundary.center_of_mass, direction=(0, 1, 0), degree=180
             )
-        tf_boundary = offset_wire(tf_boundary, 0.25, join="arc")
+        tf_boundary = offset_wire(tf_boundary, 1.3, join="arc")
 
         # TODO: Avoid converting to (deprecated) Loop
         # TODO: Agree on numpy array dimensionality
         x, z = flatten_shape(*tf_boundary.discretize(200, byedges=True).xz)
+        z -= 0.5
         tf_boundary = Loop(x=x, z=z)
 
         profile = None
