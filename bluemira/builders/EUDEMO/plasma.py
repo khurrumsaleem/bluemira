@@ -47,7 +47,7 @@ from bluemira.equilibria.equilibrium import Equilibrium
 from bluemira.equilibria.shapes import JohnerLCFS
 from bluemira.geometry._deprecated_loop import Loop
 from bluemira.geometry.face import BluemiraFace
-from bluemira.geometry.parameterisations import PrincetonD
+from bluemira.geometry.parameterisations import PrincetonD, TripleArc
 from bluemira.geometry.tools import make_circle, make_polygon, offset_wire, revolve_shape
 from bluemira.geometry.wire import BluemiraWire
 
@@ -219,16 +219,29 @@ class PlasmaBuilder(Builder):
         rin, rout = self._params["r_tf_in_centre"], self._params["r_tf_out_centre"]
 
         # TODO: Handle other TF coil parameterisations?
-        shape = PrincetonD()
-        for key, val in {"x1": rin, "x2": rout, "dz": 0}.items():
-            shape.adjust_variable(key, value=val)
+        if False:
+            shape = PrincetonD()
+            for key, val in {"x1": rin, "x2": rout, "dz": 0}.items():
+                shape.adjust_variable(key, value=val)
+        else:
+            shape = TripleArc(
+                {
+                    "x1": {"value": rin},
+                    "dz": {"value": -0.3},
+                    "sl": {"value": 5.4},
+                    "f1": {"value": 4},
+                    "f2": {"value": 5},
+                    "a1": {"value": 6.02},
+                    "a2": {"value": 85.05},
+                }
+            )
 
         tf_boundary = shape.create_shape()
         if self._params.delta_95 < 0:  # Negative triangularity
             tf_boundary.rotate(
                 tf_boundary.center_of_mass, direction=(0, 1, 0), degree=180
             )
-        tf_boundary = offset_wire(tf_boundary, -0.5)
+        tf_boundary = offset_wire(tf_boundary, 0.25, join="arc")
 
         # TODO: Avoid converting to (deprecated) Loop
         # TODO: Agree on numpy array dimensionality
