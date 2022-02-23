@@ -23,6 +23,8 @@
 Simple example of a 0-D steady-state balance of plant view.
 """
 
+import matplotlib.pyplot as plt
+
 from bluemira.balance_of_plant.steady_state import (
     BalanceOfPlant,
     H2OPumping,
@@ -92,3 +94,5 @@ WCLL_bop = BalanceOfPlant(
 )
 WCLL_bop.build()
 WCLL_bop.plot(title="WCLL blanket")
+
+plt.show()
