@@ -23,8 +23,13 @@
 Simple example of a 0-D steady-state balance of plant view.
 """
 
+# %%[markdown]
+# Import package to visualize results
+
+# %%
 import matplotlib.pyplot as plt
 
+# %%
 from bluemira.balance_of_plant.steady_state import (
     BalanceOfPlant,
     H2OPumping,
@@ -37,6 +42,26 @@ from bluemira.balance_of_plant.steady_state import (
 )
 from bluemira.base.parameter import ParameterFrame
 
+# %%[markdown]
+# # Create Balance of Plant (BoP) Model
+#
+# ## Import BoP module
+#
+# The current version of BLUEMIRA uses the legacy BLUEPRINT BoP module.
+# This example imports that module and sets examples for both an
+# HCPB-EUDEMO and a WCLL_EUDEMO.
+
+
+# %%[markdown]
+# ## Define General BoP Parameters
+#
+# The sequence of parameters to define any BoP are as follows:
+# - reactor power composition;
+# - coefficients for splitting neutron power;
+# - coefficients for splitting radiation power;
+# - coolant, power conversion and parasitic load parameters.
+
+# %%
 # fmt: off
 default_params = ParameterFrame([
     ['P_fus_DT', 'D-T fusion power', 1995, 'MW', None, 'Input'],
@@ -67,6 +92,13 @@ bop_cycle = SuperheatedRankine(bb_t_out=500, delta_t_turbine=20)
 divertor_pump_strat = H2OPumping(f_pump=0.05, eta_isentropic=0.99, eta_electric=0.87)
 parasitic_load_strat = ParasiticLoadStrategy()
 
+
+# %%[markdown]
+# ## Define Specific BoP Parameters
+
+
+# %%
+# HCPB architecture
 HCPB_bop = BalanceOfPlant(
     default_params,
     rad_sep_strat=rad_sep_strat,
@@ -83,6 +115,9 @@ HCPB_bop.plot(title="HCPB blanket")
 blanket_pump_strat = H2OPumping(0.005, eta_isentropic=0.99, eta_electric=0.87)
 bop_cycle = PredeterminedEfficiency(0.33)
 
+
+# %%
+# WCLL architecture
 WCLL_bop = BalanceOfPlant(
     default_params,
     rad_sep_strat=rad_sep_strat,
@@ -95,4 +130,9 @@ WCLL_bop = BalanceOfPlant(
 WCLL_bop.build()
 WCLL_bop.plot(title="WCLL blanket")
 
+
+# %%[markdown]
+# # Visualize the results
+
+# %%
 plt.show()
