@@ -1,11 +1,16 @@
-# Testing XSteam
-# To be added to environment set-up: `pip install pyXSteam`
-
+# Import necessary packages
+import numpy
 from iapws import IAPWS97
 from pyXSteam.XSteam import XSteam
 
-steamTable = XSteam(XSteam.UNIT_SYSTEM_MKS)
-print(steamTable.hL_p(220.0))
+# Testing XSteam
+# To be added to environment set-up: `pip install pyXSteam`
+
+
+steam_table = XSteam(XSteam.UNIT_SYSTEM_MKS)
+pressure_vector = numpy.arange(220, 230)
+print(pressure_vector)
+print(steam_table.hL_p(pressure_vector))
 
 
 # Testing iapws
