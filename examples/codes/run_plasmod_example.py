@@ -57,7 +57,9 @@ set_log_level("DEBUG")
 # %%
 
 # PLASMOD_PATH = "/home/fabrizio/bwSS/plasmod/bin/"
-PLASMOD_PATH = ""
+PLASMOD_PATH = (
+    "/Users/tiago/Documents/VSCODE/bluemira/_TIAGO_FILES_/SIMLINKS/plasmod/bin/"
+)
 binary = f"{PLASMOD_PATH}plasmod"
 
 # %%[markdown]
