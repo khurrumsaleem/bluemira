@@ -43,11 +43,11 @@
     "qstar": null,
     // # [-] plasma internal inductance
     "rli": null,
-    // # [m²] plasma poloidal cross section area
+    // # [m2] plasma poloidal cross section area
     "Sp": null,
-    // # [m²] plasma toroidal surface
+    // # [m2] plasma toroidal surface
     "torsurf": null,
-    // # [m³] plasma volume
+    // # [m3] plasma volume
     "Vp": null,
     // # [V] plasma loop voltage
     "v_loop": null,
@@ -181,33 +181,33 @@
     "dprof": null,
     // # [(m*T) * (m*T) / Wb == T] FF' profile
     "ffprime": null,
-    // # [m²] < |grad V|²/r²> g2 metric coefficient's profile
+    // # [m2] < |grad V|^2/r^2> g2 metric coefficient's profile
     "g2": null,
-    // # [m^-2] < 1/r²> g3 metric coefficient's profile
+    // # [m^-2] < 1/r^2> g3 metric coefficient's profile
     "g3": null,
     // # [m*T] Poloidal current profile
     "ipol": null,
-    // # [A/m²] Bootstrap parallel current density profile
+    // # [A/m2] Bootstrap parallel current density profile
     "jbs": null,
-    // # [A/m²] CD parallel current density profile
+    // # [A/m2] CD parallel current density profile
     "jcd": null,
-    // # [A/m²] Parallel current density profile
+    // # [A/m2] Parallel current density profile
     "jpar": null,
     // # [-] Elongation profile
     "kprof": null,
     // # [Pa/Wb] p' profile
     "pprime": null,
-    // # [10¹⁹/m3] deuterium density profile
+    // # [1E19/m3] deuterium density profile
     "ndeut": null,
-    // # [10¹⁹/m3] electron density profile
+    // # [1E19/m3] electron density profile
     "ne": null,
-    // # [10¹⁹/m3] fuel density profile
+    // # [1E19/m3] fuel density profile
     "nfuel": null,
-    // # [10¹⁹/m3] helium density profile
+    // # [1E19/m3] helium density profile
     "nalf": null,
-    // # [10¹⁹/m³] ion density profile
+    // # [1E19/m3] ion density profile
     "nions": null,
-    // # [10¹⁹/m3] tritium density profile
+    // # [1E19/m3] tritium density profile
     "ntrit": null,
     // # [Wb] Toroidal flux profile
     "phi": null,
@@ -225,7 +225,7 @@
     "Ti": null,
     // # [-] normalized toroidal flux coordinate (Phi/Phi_b)
     "x": null,
-    // # [m³] Volume profile
+    // # [m3] Volume profile
     "volprof": null,
     // # [m2] V' profile (derivative w.r.t. radial coordinate)
     "vprime": null

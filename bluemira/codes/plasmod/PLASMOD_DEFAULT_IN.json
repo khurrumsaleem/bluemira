@@ -10,7 +10,7 @@
     "dtmax": 1e-2,
     // # [-] exponent of jipperdo2
     "dtmaxmin": 0.1,
-    // # [-] stabilizing diff for TGLF in m²/s
+    // # [-] stabilizing diff for TGLF in m^2/s
     "dtmaxmax": 1.0,
     // # [-] tolerance above which TGLF should be always called
     "dtminmax": 5.0,
@@ -287,8 +287,8 @@
     "cxe_psepfac": 1.0e-3,
     // [-] scale factor for newton scheme on Ar (1.e-4)
     "car_qdivt": 1.0e-4,
-    // [MW/m²] Pcontrol/S_lateral (0.)
+    // [MW/m2] Pcontrol/S_lateral (0.)
     "contrpovs": 0.0,
-    // [MW/m²] Pcontrol/R (0.)
+    // [MW/m2] Pcontrol/R (0.)
     "contrpovr": 0.0
 }
