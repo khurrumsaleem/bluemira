@@ -58,7 +58,7 @@ set_log_level("DEBUG")
 
 # PLASMOD_PATH = "/home/fabrizio/bwSS/plasmod/bin/"
 PLASMOD_PATH = (
-    "/Users/tiago/Documents/VSCODE/bluemira/_TIAGO_FILES_/SIMLINKS/plasmod/bin/"
+    "/Users/tiago/Documents/VSCODE/BLUEMIRA/bluemira/_TIAGO_FILES_/SIMLINKS/plasmod/bin/"
 )
 binary = f"{PLASMOD_PATH}plasmod"
 
