@@ -43,8 +43,17 @@ class DisplayConverter:
         """
         Look for desired `display_units.JSON` file
         """
-        frame = inspect.stack()[2]
+
+        # Get path of the top-most script calling the class
+        frame = inspect.stack()[-1]
         module = inspect.getmodule(frame[0])
         filename = module.__file__
+
+        # Extract directory name and look for JSON file
+        desired_path = os.path.dirname(filename)
+        desired_path = os.path.join(desired_path, "display_units.json")
+        if not os.path.exists(desired_path):
+            desired_path = self.default_display_units
+
         # If file can't be found, returns default file
-        return filename
+        return desired_path

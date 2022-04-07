@@ -1,8 +1,15 @@
+"""
+Created on Thu April 07 17:56:00 2022
+
+@author: tplobo
+"""
+
 # Import packages
 import json
 import os
 
-import bluemira.base.file as blm  # import get_bluemira_root
+# Import bluemira classes
+import bluemira.base.file as blm
 import bluemira.power_cycle.display as dsp
 
 # Start script
