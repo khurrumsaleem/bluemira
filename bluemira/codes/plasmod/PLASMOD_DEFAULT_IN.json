@@ -3,11 +3,11 @@
     // # list numerics properties (num type)
     // #############################
     // # [-] max iteration error between transport/equilibrium iterations
-    "tol": 1e-10,
+    "tol": 1e-6,
     // # [-] min time step between iterations
-    "dtmin": 1e-2,
+    "dtmin": 0.03,
     // # [-] max time step between iterations
-    "dtmax": 1e-2,
+    "dtmax": 0.1,
     // # [-] exponent of jipperdo2
     "dtmaxmin": 0.1,
     // # [-] stabilizing diff for TGLF in m^2/s
@@ -55,11 +55,11 @@
     // # 555 - H factor scaling from F. Palermo
     // # 111 - another model based on gyro-Bohm transport
     // # 2 - no reference in the source code
-    "i_modeltype": 1,
+    "i_modeltype": 111,
     // # [-] equilibrium model selector:
     // # 1 - EMEQ solves equilibrium with given q95, with sawteeth.
     // # 2 - EMEQ solves with given Ip, with sawteeth
-    "i_equiltype": 2,
+    "i_equiltype": 1,
     // # [-] pedestal model selector:
     // # 1 - fixed pedestal temperature (Teped_in),
     // # 2 - Saarelma scaling
@@ -101,8 +101,6 @@
     "A": 3.1,
     // # [m3] constrained plasma volume (set negative value to disable volume constraining)
     "volume_in": -2500,
-    // # [m] plasma minor radius (just initial guess)
-    "amin": 2.9039,
     // # [T] Toroidal field at plasma center
     "Bt": 5.855,
     // # [-] plasma edge triangularity (used only for first iteration,
@@ -118,7 +116,7 @@
     // # [-] safety factor at 95% flux surface
     // (used if i_equiltype == 1. Otherwise q95 is calculated
     // and Ip is used as input)
-    "q95": 3.5,
+    "q95": 3.25,
     // ############################
     // # list composition properties (comp type)
     // #############################
@@ -164,7 +162,7 @@
     "psepb_q95AR_sup": 9.2,
     // # [MW/m] Divertor challenging criterion Psep / R0
     // # if Psep/R0 > Psep_R0_max seed Xenon
-    "psep_r_sup": 230.0,
+    "psep_r_sup": 23.0,
     // # [-] ratio of Pline(Xe)/(Psep0 - Psepcrit), or -1 to ignore
     // Psep0 = Palpha + Paux - Pline(Ar) - Pbrehm - Psync
     "fcoreraditv": -1.0,
@@ -191,11 +189,11 @@
     // # list general inputs: control, confinement, B.C., etc (inp type)
     // #############################
     // # [-] Greenwald density fraction at pedestal
-    "f_gw": 0.85,
+    "f_gw": 0.9,
     // # [-] Greenwald density fraction at separatrix
     "f_gws": 0.5,
     // # [-] input H-factor:if i_modeltype > 1 H factor calculated
-    "Hfact": 1.1,
+    "Hfact": 1.0,
     // # [-] fraction of NBI power to ions
     "fpion": 0.5,
     // # [m*MA/MW] Normalized CD efficiency
@@ -253,14 +251,14 @@
     // # [MW] required fusion power.
     // # 0. - ignored
     // # > 0 - Auxiliary heating is calculated to match Pfus_req
-    "pfus_req": 0.0,
+    "pfus_req": 2000.0,
     // # [-] required fraction of non inductive current, if 0, dont use CD
     "f_ni": 0.0,
     // # [MW] max allowed power for control (fusion power, H-mode)
-    "pheat_max": 130.0,
+    "pheat_max": 100.0,
     // #############################
     // # [MW] fixed auxiliary heating power required for control
-    "q_control": 130.0,
+    "q_control": 50.0,
     // #############################
     // # [MW] total auxiliary power  (0.) DO NOT CHANGE
     "q_heat": 0.0,

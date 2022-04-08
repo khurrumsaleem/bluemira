@@ -4,7 +4,7 @@
     // # list geometry properties (geom type)
     // ############################################
     // # [m] plasma minor radius (just initial guess)
-    "amin": null,
+    // "amin": null,
     // # [-] plasma edge triangularity (used only for first iteration,
     // # then iterated to constrain delta95)
     "d": null,

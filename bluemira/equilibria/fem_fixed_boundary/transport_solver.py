@@ -121,7 +121,7 @@ class PlasmodTransportSolver(TransportSolver):
     def pprime(self):
         """Get pprime as function of the magnetic coordinate"""
         if self._pprime is None:
-            data = self._from_phi_to_psi("pprime")*1e6
+            data = self._from_phi_to_psi("pprime")
             self._pprime = UnivariateSpline(self.x, data, ext=0)
         return self._pprime
 
@@ -129,7 +129,7 @@ class PlasmodTransportSolver(TransportSolver):
     def ffprime(self):
         """Get ffprime as function of the magnetic coordinate"""
         if self._ffprime is None:
-            data = self._from_phi_to_psi("ffprime")*1e6
+            data = self._from_phi_to_psi("ffprime")
             self._ffprime = UnivariateSpline(self.x, data, ext=0)
         return self._ffprime
 
@@ -137,7 +137,7 @@ class PlasmodTransportSolver(TransportSolver):
     def psi(self):
         """Get the magnetic coordinate"""
         if self._psi is None:
-            self._psi = self._from_phi_to_psi("psi")*1e6
+            self._psi = self._from_phi_to_psi("psi")
         return self._psi
 
     @property
@@ -165,7 +165,7 @@ class PlasmodTransportSolver(TransportSolver):
     def I_p(self):
         """Get plasma elongation at 95 % flux surface"""
         if self._I_p is None:
-            self._I_p = self.solver.params["I_p"]*1e6
+            self._I_p = self.solver.params["I_p"]
         return self._I_p
 
 
