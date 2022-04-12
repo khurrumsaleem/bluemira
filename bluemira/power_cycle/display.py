@@ -25,9 +25,14 @@ class DisplayConverter:
     ----------------
     """
 
-    def __init__(self):
+    def __init__(self, mode):
+
+        # Find relevant `display_units.JSON` files
         self.default_display_units = self.find_default_file()
         self.desired_display_units = self.find_desired_file()
+
+        # Read desired file
+        self.display_units = self.read_file(mode)
 
     def find_default_file(self):
         """
@@ -57,3 +62,5 @@ class DisplayConverter:
 
         # If file can't be found, returns default file
         return desired_path
+
+    # def read_desired_file(self):
