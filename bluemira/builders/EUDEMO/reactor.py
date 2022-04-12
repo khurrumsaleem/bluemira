@@ -36,6 +36,7 @@ from bluemira.builders.EUDEMO.ivc.ivc import build_ivc_xz_shapes
 from bluemira.builders.EUDEMO.pf_coils import PFCoilsBuilder
 from bluemira.builders.EUDEMO.plasma import PlasmaBuilder
 from bluemira.builders.EUDEMO.tf_coils import TFCoilsBuilder
+from bluemira.builders.EUDEMO.vacuum_vessel import VacuumVesselBuilder
 from bluemira.builders.radiation_shield import RadiationShieldBuilder
 from bluemira.builders.thermal_shield import ThermalShieldBuilder
 from bluemira.codes import systems_code_solver
@@ -54,6 +55,7 @@ class EUDEMOReactor(Reactor):
     TF_COILS = "TF Coils"
     PF_COILS = "PF Coils"
     IVC = "In-Vessel Components"
+    VACUUM_VESSEL = "Vacuum Vessel"
     THERMAL_SHIELD = "Thermal Shield"
     CRYOSTAT = "Cryostat"
     RADIATION_SHIELD = "Radiation Shield"
@@ -69,8 +71,9 @@ class EUDEMOReactor(Reactor):
         (
             blanket_face,
             divertor_face,
-            _,
+            ivc_boundary,
         ) = self.build_in_vessel_component_shapes(component)
+        component.add_child(self.build_vacuum_vessel(component, ivc_boundary))
         component.add_child(self.build_divertor(component, divertor_face))
         component.add_child(self.build_blanket(component, blanket_face))
         component.add_child(self.build_TF_coils(component))
@@ -83,17 +86,14 @@ class EUDEMOReactor(Reactor):
 
         return component
 
+    @Reactor.design_stage(PROCESS)
     def run_systems_code(self):
         """
         Run the systems code module in the requested run mode.
         """
-        name = PROCESS
-
-        bluemira_print(f"Starting design stage: {name}")
-
         default_config = {"process_mode": "run"}
 
-        config = self._process_design_stage_config(name, default_config)
+        config = self._process_design_stage_config(default_config)
 
         # TODO: This is needed to support backward compatibility with the old
         # process_mode configuration at the top level. Can be removed when the
@@ -107,45 +107,33 @@ class EUDEMOReactor(Reactor):
             self._file_manager.reference_data_dirs["systems_code"],
         )
 
-        self.register_solver(solver, name)
+        self.register_solver(solver)
         solver.run()
         self._params.update_kw_parameters(solver.params.to_dict())
 
-        bluemira_print(f"Completed design stage: {name}")
-
+    @Reactor.design_stage(PLASMA)
     def build_plasma(self):
         """
         Run the plasma build using the requested equilibrium problem.
         """
-        name = EUDEMOReactor.PLASMA
-
-        bluemira_print(f"Starting design stage: {name}")
-
         default_eqdsk_dir = self._file_manager.reference_data_dirs["equilibria"]
         default_eqdsk_name = f"{self._params.Name.value}_eqref.json"
         default_eqdsk_path = os.path.join(default_eqdsk_dir, default_eqdsk_name)
 
         default_config = {"runmode": "run", "eqdsk_path": default_eqdsk_path}
 
-        config = self._process_design_stage_config(name, default_config)
+        config = self._process_design_stage_config(default_config)
 
         builder = PlasmaBuilder(self._params.to_dict(), config)
-        self.register_builder(builder, name)
+        self.register_builder(builder)
 
-        component = super()._build_stage(name)
+        return super()._build_stage()
 
-        bluemira_print(f"Completed design stage: {name}")
-
-        return component
-
+    @Reactor.design_stage(TF_COILS)
     def build_TF_coils(self, component_tree: Component):
         """
         Run the TF Coils build using the requested mode.
         """
-        name = EUDEMOReactor.TF_COILS
-
-        bluemira_print(f"Starting design stage: {name}")
-
         default_variables_map = {
             "x1": {
                 "value": "r_tf_in_centre",
@@ -177,7 +165,7 @@ class EUDEMOReactor(Reactor):
             "opt_parameters": {},
         }
 
-        config = self._process_design_stage_config(name, default_config)
+        config = self._process_design_stage_config(default_config)
 
         if config["geom_path"] is None:
             if config["runmode"] == "run":
@@ -194,20 +182,15 @@ class EUDEMOReactor(Reactor):
         sep_shape = sep_comp.shape.boundary[0]
 
         builder = TFCoilsBuilder(self._params.to_dict(), config, separatrix=sep_shape)
-        self.register_builder(builder, name)
+        self.register_builder(builder)
 
-        component = super()._build_stage(name)
+        return super()._build_stage()
 
-        bluemira_print(f"Completed design stage: {name}")
-
-        return component
-
+    @Reactor.design_stage(PF_COILS)
     def build_PF_coils(self, component_tree: Component):
         """
         Run the PF Coils build using the requested mode.
         """
-        name = EUDEMOReactor.PF_COILS
-
         default_eqdsk_dir = self._file_manager.reference_data_dirs["equilibria"]
         default_eqdsk_name = f"{self._params.Name.value}_eqref.json"
         default_eqdsk_path = os.path.join(default_eqdsk_dir, default_eqdsk_name)
@@ -217,24 +200,18 @@ class EUDEMOReactor(Reactor):
             "eqdsk_path": default_eqdsk_path,
         }
 
-        config = self._process_design_stage_config(name, default_config)
+        config = self._process_design_stage_config(default_config)
 
         builder = PFCoilsBuilder(self._params.to_dict(), config)
-        self.register_builder(builder, name)
+        self.register_builder(builder)
 
-        component = super()._build_stage(name)
+        return super()._build_stage()
 
-        bluemira_print(f"Completed design stage: {name}")
-        return component
-
+    @Reactor.design_stage(THERMAL_SHIELD)
     def build_thermal_shield(self, component_tree: Component):
         """
         Run the thermal shield build.
         """
-        name = self.THERMAL_SHIELD
-
-        bluemira_print(f"Starting design stage: {name}")
-
         # Prepare inputs
         pf_coils = component_tree.get_component("PF Coils").get_component("xz")
         pf_kozs = [
@@ -246,7 +223,7 @@ class EUDEMOReactor(Reactor):
         )
 
         default_config = {}
-        config = self._process_design_stage_config(name, default_config)
+        config = self._process_design_stage_config(default_config)
 
         builder = ThermalShieldBuilder(
             self._params.to_dict(),
@@ -255,21 +232,15 @@ class EUDEMOReactor(Reactor):
             tf_xz_koz=tf_koz,
             vv_xz_koz=None,
         )
-        self.register_builder(builder, name)
-        component = super()._build_stage(name)
+        self.register_builder(builder)
 
-        bluemira_print(f"Completed design stage: {name}")
+        return super()._build_stage()
 
-        return component
-
+    @Reactor.design_stage(IVC)
     def build_in_vessel_component_shapes(self, component_tree: Component):
         """
         Run the in-vessel component builder.
         """
-        name = EUDEMOReactor.IVC
-
-        bluemira_print(f"Starting design stage: {name}")
-
         default_variables_map = {
             "x1": {"value": "r_fw_ib_in", "fixed": True},  # ib radius
             "x2": {"value": "r_fw_ob_in"},  # ob radius
@@ -290,109 +261,98 @@ class EUDEMOReactor(Reactor):
             "variables_map": default_variables_map,
         }
 
-        config = self._process_design_stage_config(name, default_config)
+        config = self._process_design_stage_config(default_config)
 
         plasma = component_tree.get_component(self.PLASMA)
         builder = InVesselComponentBuilder(
             self._params.to_dict(), build_config=config, equilibrium=plasma.equilibrium
         )
-        self.register_builder(builder, name)
+        self.register_builder(builder)
 
-        component = super()._build_stage(name)
-        bluemira_print(f"Completed design stage: {name}")
+        component = super()._build_stage()
 
         return build_ivc_xz_shapes(component, self._params.c_rm.value)
 
+    @Reactor.design_stage(DIVERTOR)
     def build_divertor(self, component_tree: Component, divertor_face):
         """
         Run the divertor build.
         """
-        name = EUDEMOReactor.DIVERTOR
-
-        bluemira_print(f"Starting design stage: {name}")
-
         default_config = {}
-        config = self._process_design_stage_config(name, default_config)
+        config = self._process_design_stage_config(default_config)
 
         builder = DivertorBuilder(
             self._params.to_dict(), config, divertor_silhouette=divertor_face
         )
-        self.register_builder(builder, name)
-        component = super()._build_stage(name)
+        self.register_builder(builder)
 
-        bluemira_print(f"Completed design stage: {name}")
+        return super()._build_stage()
 
-        return component
-
+    @Reactor.design_stage(BLANKET)
     def build_blanket(self, component_tree: Component, blanket_face):
         """
         Run the breeding blanket build.
         """
-        name = EUDEMOReactor.BLANKET
-
-        bluemira_print(f"Starting design stage: {name}")
-
         default_config = {}
-        config = self._process_design_stage_config(name, default_config)
+        config = self._process_design_stage_config(default_config)
 
         builder = BlanketBuilder(
             self._params.to_dict(), config, blanket_silhouette=blanket_face
         )
-        self.register_builder(builder, name)
-        component = super()._build_stage(name)
+        self.register_builder(builder)
 
-        bluemira_print(f"Completed design stage: {name}")
+        return super()._build_stage()
 
-        return component
+    @Reactor.design_stage(VACUUM_VESSEL)
+    def build_vacuum_vessel(self, component_tree: Component, ivc_boundary):
+        """
+        Run the reactor vacuum vessel build.
+        """
+        default_config = {}
+        config = self._process_design_stage_config(default_config)
 
+        builder = VacuumVesselBuilder(
+            self._params.to_dict(), config, ivc_koz=ivc_boundary
+        )
+        self.register_builder(builder)
+        return super()._build_stage()
+
+    @Reactor.design_stage(CRYOSTAT)
     def build_cryostat(self, component_tree: Component):
         """
         Run the cryostat vacuum vessel build.
         """
-        name = EUDEMOReactor.CRYOSTAT
-
-        bluemira_print(f"Starting design stage: {name}")
-
         thermal_shield = component_tree.get_component(
             EUDEMOReactor.THERMAL_SHIELD
         ).get_component("xz")
         cts = thermal_shield.get_component("Cryostat TS").shape.boundary[0]
 
         default_config = {}
-        config = self._process_design_stage_config(name, default_config)
+        config = self._process_design_stage_config(default_config)
 
         builder = CryostatBuilder(self._params.to_dict(), config, cts_xz=cts)
-        self.register_builder(builder, name)
-        component = super()._build_stage(name)
+        self.register_builder(builder)
 
-        bluemira_print(f"Completed design stage: {name}")
+        return super()._build_stage()
 
-        return component
-
+    @Reactor.design_stage(RADIATION_SHIELD)
     def build_radiation_shield(self, component_tree: Component):
         """
         Run the radiation shield build.
         """
-        name = EUDEMOReactor.RADIATION_SHIELD
-
-        bluemira_print(f"Starting design stage: {name}")
-
         cryostat = component_tree.get_component(EUDEMOReactor.CRYOSTAT).get_component(
             "xz"
         )
         cryo_vv_xz = cryostat.get_component("Cryostat VV").shape
 
         default_config = {}
-        config = self._process_design_stage_config(name, default_config)
+        config = self._process_design_stage_config(default_config)
 
         builder = RadiationShieldBuilder(
             self._params.to_dict(),
             config,
             cryo_vv_xz=cryo_vv_xz,
         )
-        self.register_builder(builder, name)
-        component = super()._build_stage(name)
+        self.register_builder(builder)
 
-        bluemira_print(f"Completed design stage: {name}")
-
-        return component
+        return super()._build_stage()

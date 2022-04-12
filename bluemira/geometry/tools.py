@@ -24,7 +24,7 @@ Useful functions for bluemira geometries.
 """
 
 from copy import deepcopy
-from typing import Iterable, List, Sequence, Type, Union
+from typing import Iterable, List, Optional, Sequence, Type, Union
 
 import numba as nb
 import numpy as np
@@ -111,6 +111,8 @@ def make_bspline(
     points: Union[list, np.ndarray],
     label: str = "",
     closed: bool = False,
+    start_tangent: Optional[Iterable] = None,
+    end_tangent: Optional[Iterable] = None,
 ) -> BluemiraWire:
     """
     Make a bspline from a set of points.
@@ -125,6 +127,10 @@ def make_bspline(
     closed: bool, default = False
         if True, the first and last points will be connected in order to form a
         closed bspline. Defaults to False.
+    start_tangent: Optional[Iterable]
+        Tangency of the BSpline at the first pole. Must be specified with end_tangent
+    end_tangent: Optional[Iterable]
+        Tangency of the BSpline at the last pole. Must be specified with start_tangent
 
     Returns
     -------
@@ -132,7 +138,9 @@ def make_bspline(
         a bluemira wire that contains the bspline
     """
     points = Coordinates(points).T
-    return BluemiraWire(cadapi.make_bspline(points, closed), label=label)
+    return BluemiraWire(
+        cadapi.make_bspline(points, closed, start_tangent, end_tangent), label=label
+    )
 
 
 def make_bezier(
@@ -294,9 +302,15 @@ def wire_closure(bmwire: BluemiraWire, label="closure") -> BluemiraWire:
 def offset_wire(
     wire: BluemiraWire,
     thickness: float,
+    /,
     join: str = "intersect",
     open_wire: bool = True,
     label: str = "",
+    *,
+    fallback_method="square",
+    byedges=True,
+    ndiscr=200,
+    **fallback_kwargs,
 ) -> BluemiraWire:
     """
     Make a planar offset from a planar wire.
@@ -314,14 +328,43 @@ def offset_wire(
         wire, or a closed offset wire that encompasses the original wire. This is
         disabled for closed wires.
 
+    Other Parameters
+    ----------------
+    byedges: bool (default = True)
+        Whether or not to discretise the wire by edges
+    ndiscr: int (default = 200)
+        Number of points to discretise the wire to
+    fallback_method: str
+        Method to use in discretised offsetting, will default to `square` as `round`
+        is know to be very slow
+
+    Notes
+    -----
+    If primitive offsetting failed, will fall back to a discretised offset
+    implementation, where the fallback kwargs are used. Discretised offsetting is
+    only supported for closed wires.
+
     Returns
     -------
     wire: BluemiraWire
         Offset wire
     """
-    return BluemiraWire(
-        cadapi.offset_wire(wire._shape, thickness, join, open_wire), label=label
-    )
+    try:
+        return BluemiraWire(
+            cadapi.offset_wire(wire._shape, thickness, join, open_wire), label=label
+        )
+    except cadapi.FreeCADError:
+        bluemira_warn(
+            "Primitive offsetting failed, falling back to discretised " "offsetting."
+        )
+        from bluemira.geometry._deprecated_offset import offset_clipper
+
+        coordinates = wire.discretize(byedges=byedges, ndiscr=ndiscr)
+
+        result = offset_clipper(
+            coordinates, thickness, method=fallback_method, **fallback_kwargs
+        )
+        return make_polygon(result, label=label)
 
 
 def convex_hull_wires_2d(

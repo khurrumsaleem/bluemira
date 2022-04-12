@@ -54,7 +54,7 @@ from bluemira.base.constants import EPS
 from bluemira.base.look_and_feel import bluemira_warn
 
 # import errors and warnings
-from bluemira.codes.error import FreeCADError
+from bluemira.codes.error import FreeCADError, InvalidCADInputsError
 from bluemira.geometry.constants import MINIMUM_LENGTH
 
 apiVertex = Part.Vertex  # noqa :N816
@@ -234,7 +234,8 @@ def make_bezier(points: Union[list, np.ndarray], closed: bool = False) -> Part.W
 def make_bspline(
     points: Union[list, np.ndarray],
     closed: bool = False,
-    **kwargs,
+    start_tangent: Optional[Iterable] = None,
+    end_tangent: Optional[Iterable] = None,
 ) -> Part.Wire:
     """
     Make a bezier curve from a set of points.
@@ -247,10 +248,10 @@ def make_bspline(
     closed: bool, default = False
         if True, the first and last points will be connected in order to form a
         closed shape.
-
-    Other Parameters
-    ----------------
-        knot sequence
+    start_tangent: Optional[Iterable]
+        Tangency of the BSpline at the first pole. Must be specified with end_tangent
+    end_tangent: Optional[Iterable]
+        Tangency of the BSpline at the last pole. Must be specified with start_tangent
 
     Returns
     -------
@@ -259,9 +260,36 @@ def make_bspline(
     """
     # In this case, it is not really necessary to convert points in FreeCAD vector. Just
     # left for consistency with other methods.
-    # TODO: Add support for start and end tangencies.. I tried but I don't think FreeCAD
-    # wraps OCC enough here.
     pntslist = [Base.Vector(x) for x in points]
+
+    # Recreate checks that are made in freecad/src/MOD/Draft/draftmake/make_bspline.py
+    # function make_bspline, line 75
+
+    if len(pntslist) < 2:
+        _err = "make_bspline: not enough points"
+        raise FreeCADError(_err + "\n")
+    if np.allclose(pntslist[0], pntslist[-1], rtol=0, atol=EPS):
+        if len(pntslist) > 2:
+            closed = True
+            pntslist.pop()
+            _err = "make_bspline: equal endpoints forced Closed"
+            bluemira_warn(_err)
+        else:
+            # len == 2 and first == last
+            _err = "make_bspline: Invalid pointslist (len == 2 and first == last)"
+            raise FreeCADError(_err)
+
+    kwargs = {}
+    if start_tangent and end_tangent:
+        kwargs["InitialTangent"] = Base.Vector(start_tangent)
+        kwargs["FinalTangent"] = Base.Vector(end_tangent)
+
+    if start_tangent and not end_tangent or end_tangent and not start_tangent:
+        bluemira_warn(
+            "You must set both start and end tangencies or neither when creating a "
+            "bspline. Start and end tangencies ignored."
+        )
+
     bsc = Part.BSplineCurve()
     bsc.interpolate(pntslist, PeriodicFlag=closed, **kwargs)
     wire = apiWire(bsc.toShape())
@@ -413,10 +441,10 @@ def offset_wire(
         return deepcopy(wire)
 
     if _wire_is_straight(wire):
-        raise FreeCADError("Cannot offset a straight line.")
+        raise InvalidCADInputsError("Cannot offset a straight line.")
 
     if not _wire_is_planar(wire):
-        raise FreeCADError("Cannot offset a non-planar wire.")
+        raise InvalidCADInputsError("Cannot offset a non-planar wire.")
 
     if join == "arc":
         f_join = 0
@@ -424,7 +452,7 @@ def offset_wire(
         f_join = 2
     else:
         # NOTE: The "tangent": 1 option misbehaves in FreeCAD
-        raise FreeCADError(
+        raise InvalidCADInputsError(
             f"Unrecognised join value: {join}. Please choose from ['arc', 'intersect']."
         )
 
