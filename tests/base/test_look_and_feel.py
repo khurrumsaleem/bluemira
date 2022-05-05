@@ -20,6 +20,7 @@
 # License along with bluemira; if not, see <https://www.gnu.org/licenses/>.
 
 import os
+from unittest import mock
 
 import pytest
 
@@ -137,7 +138,10 @@ def test_bluemira_print_flush(caplog):
     assert os.linesep not in result[0]
 
 
-def test_print_banner(caplog):
+# Long git branch names go on a separate line; mock a short name so are
+# line count can't go wrong
+@mock.patch("bluemira.base.look_and_feel.get_git_branch", return_value="develop")
+def test_print_banner(_, caplog):
     result = capture_output(caplog, print_banner)
 
     assert len(result) == 15
