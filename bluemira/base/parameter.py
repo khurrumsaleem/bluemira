@@ -691,7 +691,9 @@ class ParameterFrame:
 
     def __init__(self, record_list=None, *, with_defaults=False):
         if with_defaults:
-            self._reinit()
+            # Do nothing if there are no default parameters
+            if len(self.__default_params) > 0:
+                self._reinit()
         if record_list is not None:
             self.add_parameters(record_list)
 

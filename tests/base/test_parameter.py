@@ -423,6 +423,12 @@ class TestParameterFrame:
     def setup(self):
         self.params = ParameterFrame(self.default_params)
 
+    def test_init_with_defaults_sets_no_parameters(self):
+        pf = ParameterFrame(with_defaults=True)
+
+        # Defaults are empty on base class; expect nothing to be set
+        assert len(pf.get_parameter_list()) == 0
+
     def test_keys(self):
         assert list(self.params.keys()) == [p[0] for p in self.default_params]
 
