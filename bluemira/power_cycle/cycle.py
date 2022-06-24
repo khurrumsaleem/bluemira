@@ -1,189 +1,300 @@
 """
-Full power cycle model object, used to visualize results
+Full power cycle model object, used to visualize results.
 """
+# import sys
+import json
+import os
+
 import numpy as np
 
-# class PowerCycleModel:
+# from scipy.interpolate import interp1d as imported_interp1d
+
+# import matplotlib.pyplot as plt
 
 
-class GenericPowerLoad:
+# #################################################################### #
+# ######################## POWER LOAD MANAGER ######################## #
+# #################################################################### #
+
+
+class PowerLoadManager:
     """
-    Generic power load calculator.
+    Manager for building/visualizing multiple power loads.
 
-    Takes a 'model' specification and applies to a set of 'load' and
-    'time' vectors to generate a power load curve.
+    Takes a JSON input file with the description of different power
+    loads, organized by category and system, builds their evolution
+    curves by applying the relevant model (specified in each load type)
+    and builds a single equivalent power load.
 
     Parameters
     ----------
-    model: str
-        Type of model to apply to 'load' and 'time' to generate curve
-    load: str
-        List of power values separated by ',' that define curve [W]
-    time: str
-        List of time values separated by ',' that define curve [s]
+    file: str
+        Path to input file (JSON) with power load specifications
+    phases: dict
+        List of time durations of each pulse phase, written as a
+        dictionary with the following keys:
+            d2f: (dwell-2-flat duration)    [s]
+            ftt: (flat-top duration)        [s]
+            f2d: (flat-2-dwell duration)    [s]
+            dwl: (dwell duration)           [s]
     """
 
-    # Number of points in each curve segment
-    n_points = 10
+    # Valid keys for phases input
+    valid_phases = ["d2f", "ftt", "f2d", "dwl"]
 
-    # Implemented models (add model name here after implementation)
-    valid_models = ["ramp", "step"]
+    # Valid load types
+    valid_load_types = ["active", "reactive"]
 
     # ---------------------------------------------------------------- #
     # -------------------------- CONSTRUCTOR ------------------------- #
     # ---------------------------------------------------------------- #
-    def __init__(self, model, load_string, time_string):
+    def __init__(self, file, phases):
 
-        # Validate inputs
-        model = self.__validate_input(model)
-        load_string = self.__validate_input(load_string)
-        time_string = self.__validate_input(time_string)
+        # Validate file
+        self.data = self.__validate_file(file)
 
-        # Validate model
-        self.model = self.__validate_model(model)
+        # Count categories and systems
+        self.n_category = self.__count_level_1(self.data)
+        self.n_system = self.__count_level_2(self.data)
 
-        # Validate vectors
-        self.load = self.__validate_vector(load_string)
-        self.time = self.__validate_vector(time_string)
-
-        # Validate created instance
-        self.__sanity()
+        # Validate phases
+        self.phases = self.__validate_phases(phases)
 
     @staticmethod
-    def __validate_input(input):
+    def __validate_file(string):
         """
-        Validate an input for class instance creation to be a string,
-        and remove list-indicator characters
+        Validate a string during class instance creation to ensure it
+        references a valid JSON file, and read its contents as a
+        dictionary.
         """
-        if isinstance(input, str):
-            input = input.replace("[", "")
-            input = input.replace("]", "")
-            return input
+        if not isinstance(string, str):
+            print(
+                """
+                The first input used to create an instance of the
+                'PowerLoadManager' class must be a string that
+                identifies a JSON file path.
+                """
+            )
+            raise TypeError()
+
+        # Validate file existence
+        if os.path.exists(string):
+            file = open(string)
+            data = json.load(file)
+            file.close()
+            return data
         else:
             print(
                 """
-            The inputs used to create an instance of the
-            'PowerLoad' class must all be strings.
-            """
+                No JSON file exists in the specified path.
+                """
             )
             raise TypeError()
 
     @staticmethod
-    def __validate_model(model):
-        """
-        Validate 'model' input.
-        """
-        return model
+    def __count_level_1(data):
+        n_keys = len(data)
+        return n_keys
 
     @staticmethod
-    def __validate_vector(vector):
-        """
-        Validate vector inputs and convert them to numeric lists.
-        """
-        # Split string into elements and convert them into floats
-        vector = vector.replace(" ", "")
-        vector = vector.split(",")
-        vector = [float(i) for i in vector]
-        return vector
+    def __count_level_2(data):
+        n_keys = []
+        for key_level_1 in data:
+            n_keys_level_2 = len(data[key_level_1])
+            n_keys.append(n_keys_level_2)
+        return n_keys
 
-    def __sanity(self):
-        """
-        Validate that 'load' and 'time' attributes both have the same
-        length, so that they can be used to generate a curve.
-        """
-        length_load = len(self.load)
-        length_time = len(self.time)
-        if length_load != length_time:
+    @staticmethod
+    def __validate_phases(dictionary):
+        if not isinstance(dictionary, dict):
             print(
-                f"""
-            The attributes 'load' and 'time' of an instance of the
-            {self.__class__.__name__} class must have the same length.
-            """
+                """
+                The second input used to create an instance of the
+                'PowerLoadManager' class must be a dictionary with 4
+                key:value pairs that identify the duration of each
+                pulse phase, in seconds.
+                """
             )
-            raise ValueError()
-
-    # ---------------------------------------------------------------- #
-    # ----------------------- CURVE GENERATION ----------------------- #
-    # ---------------------------------------------------------------- #
-    def generate_curve(self):
-        """
-        Select which load curve model to apply, and generate power load
-        curve.
-        """
-        load = self.load
-        time = self.time
-        model = self.model
-        n_points = self.n_points
-
-        # Select model to be applied
-        if model in self.valid_models:
-            method_name = "generate_" + model
-            generate_segment = getattr(self, method_name)
+            raise TypeError()
         else:
-            print(
-                f"""'
-            Unknown 'model' for {self.__class__.__name__} class.
-            """
-            )
-            raise ValueError()
+            for key in PowerLoadManager.valid_phases:
+                if key not in dictionary:
+                    print(
+                        f"""
+                        The key '{key}' is not present in the phases
+                        dictionary provided during instance creation.
+                        """
+                    )
+                    raise ValueError()
+                return dictionary
 
-        # Preallocate outputs
-        expanded_time = []
-        expanded_load = []
+    # ---------------------------------------------------------------- #
+    # ------------------------- MANAGE CURVES ------------------------ #
+    # ---------------------------------------------------------------- #
 
-        # Number of curve segments
-        n_segments = len(self.load) - 1
+    """
+    def superimpose(self, other):
+        '''
+        Super-imposes another PowerCurve instance onto this. This method
+        applies interpolation for any data point that does not have a
+        respective counterpoint in both instances.
+        '''
 
-        # For each curve segment (pair of points)
-        for s in range(n_segments):
-            first = (time[s], load[s])
-            last = (time[s + 1], load[s + 1])
-            time_s, load_s = generate_segment(first, last, n_points)
-            expanded_time = expanded_time + time_s
-            expanded_load = expanded_load + load_s
+        # Validate `this` and `other`
+        this = self._validate_PowerCurve(self)
+        other = self._validate_PowerCurve(other)
 
-        # Store & return curve
-        curve = {"power": expanded_load, "times": expanded_time}
-        self.curve = curve
+        # Retrieve time for both `this` and `other`
+        this_time = this.time
+        other_time = other.time
+
+        # Create `another_time` (sort and unique of joined times)
+        another_time = this_time + other_time
+        another_time = list(set(another_time))
+
+        # Call `interpolate_load` to interpolate loads for `another`
+        new_time = another_time
+        new_this_load = self.interpolate_load(this, new_time)
+        new_other_load = self.interpolate_load(other, new_time)
+
+        # Sum vectors (element by element)
+        new_this_load = np.array(new_this_load)
+        new_other_load = np.array(new_other_load)
+        another_load = new_this_load + new_other_load
+        another_load = another_load.tolist()
+
+        # Build & output new PowerCurve
+        another = PowerCurve(another_load, another_time)
+        return another
+    """
+
+    def _build_phase_load(self, load_data, phase):
+
+        # Retrieve phase data
+        phase_data = load_data[phase]
+
+        # Retrieve model class
+        model = phase_data["model_class"]
+
+        # Create model class
+        if model == "None":
+            # Create generic builder with trivial inputs
+            builder_class = globals()["GenericPowerLoad"]
+            curve_builder = builder_class("ramp", "[0,0]", "[0,1]")
+        else:
+            # Retrieve arguments
+            arguments = phase_data["variables_map"]
+            arguments = arguments.values()
+            # Create specified builder
+            builder_class = globals()[model]
+            curve_builder = builder_class(*arguments)
+
+        # Build and output curve
+        curve = curve_builder.generate_curve()
         return curve
 
-    @staticmethod
-    def generate_ramp(first, last, n_points):
-        """
-        Generate curve segment using 'ramp' model.
+    def _build_system_curves(self, system_data):
 
-        Parameters
-        ----------
-        first: tuple
-            First point in curve segment ([s],[W])
-        last: tuple
-            Last point in curve segment ([s],[W])
-        n_points: int
-            Number of points in curve segment
-        """
-        x1, y1 = first
-        x2, y2 = last
-        a, b = np.polyfit([x1, x2], [y1, y2], 1)
-        expanded_time = np.linspace(x1, x2, n_points).tolist()
-        expanded_load = [a * t + b for t in expanded_time]
-        return expanded_time, expanded_load
+        # Pre-allocate output as dictionary
+        system_name = system_data["name"]
+        system_curves = {"system": system_name}
 
-    @staticmethod
-    def generate_step(first, last, n_points):
-        """
-        Generate curve segment using 'ramp' model.
+        # For each load type
+        for load_type in self.valid_load_types:
 
-        Parameters
-        ----------
-        first: tuple
-            First point in curve segment ([s],[W])
-        last: tuple
-            Last point in curve segment ([s],[W])
-        n_points: int
-            Number of points in curve segment
-        """
+            # Retrieve load data
+            load_key = load_type + "_load"
+            time_key = load_type + "_time"
+            load_data = system_data[load_key]
 
-    # ---------------------------------------------------------------- #
-    # ---------------------- CURVE VISUALIZATION --------------------- #
-    # ---------------------------------------------------------------- #
-    # def plot(self):
+            # Retrieve wall-plug efficiency and fixed load
+            efficiency = load_data["wallplug_efficiency"]
+            fixed_load = load_data["fixed"]
+
+            # Pre-allocate vectors of complete evolution
+            pulse_load = []
+            pulse_time = []
+
+            # For each phase
+            for phase in self.valid_phases:
+
+                # Call curve builder to compute variable load
+                curve = self._build_phase_load(load_data, phase)
+                variable_load = curve["power"]
+                variable_time = curve["times"]
+
+                # Add fixed load
+                total_load = [val + fixed_load for val in variable_load]
+
+                # Apply wall-plug efficiency
+                real_load = np.divide(total_load, efficiency).tolist()
+
+                # Re-scale curve with phase duration
+                duration = self.phases[phase]
+                last_time = variable_time[-1]
+                normalization = np.divide(duration, last_time)
+                real_time = np.multiply(variable_time, normalization)
+                real_time = real_time.tolist()
+
+                # Append phase load & time to pulse load & time
+                pulse_load = pulse_load + real_load
+                if pulse_time:
+                    last_time = pulse_time[-1]
+                else:
+                    last_time = 0
+                real_time = [val + last_time for val in real_time]
+                pulse_time = pulse_time + real_time
+
+            # Store load and time
+            system_curves[load_key] = pulse_load
+            system_curves[time_key] = pulse_time
+
+        # Output curves
+        return system_curves
+
+    """
+    def _build_category_curve(self, category):
+
+        # Retrieve category data
+        category_data = self.data[category]
+
+        # List systems in category
+        all_systems = list(category_data.keys())
+
+        # Pre-allocate output as dictionary
+        category_curves = {"category": category, "systems": all_systems}
+
+        # Pre-allocate vectors of complete evolution
+        pulse_load = []
+        pulse_time = []
+
+        # Memory for each system
+        breakdown = {}
+
+        # For each system in category
+        for system in all_systems:
+
+            # Retrieve system data
+            system_data = category_data[system]
+
+            # Build system curves
+            system_curves = self._build_system_curves(system_data)
+
+            # Store system curves
+            breakdown.append(system_curves)
+
+            # For each load type
+            # for load_type in self.valid_load_types:
+
+            # Super-impose loads
+
+            # Store system curves
+            # category_curves[load_key] = pulse_load
+            # system_curves[time_key] = pulse_time
+    """
+
+
+# #################################################################### #
+# ######################### POWER CYCLE MODEL ######################## #
+# #################################################################### #
+# class PowerCycleModel:
