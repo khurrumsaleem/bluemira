@@ -57,6 +57,15 @@ per-file-ignores =
    bluemira/codes/__init__.py:
         # FreeCAD message removal function above imports
         E402,
+    bluemira/codes/plasmod/api/_inputs.py:
+        # We don't control the names of plasmod inputs
+        N815,
+    bluemira/codes/plasmod/api/_outputs.py:
+        # We don't control the names of plasmod outputs
+        N815,
+    bluemira/geometry/parameterisations.py:
+        # Lambdas are probably cleaner here
+        E731,
     documentation/source/*:
         D100,
         D101,
@@ -79,7 +88,6 @@ exclude =
     generated_data,
     # versioneer is 3rd-party and we aren't liable for their code
     versioneer.py,
-    BLUEPRINT/_version.py,
     bluemira/_version.py,
     # Ignore mirapy for now
     mirapy,
@@ -140,10 +148,14 @@ ignore_names =
     R_0,
     Z_0,
     B_0,
+    I_p,
     Ip,
     A,
     F,
+    Z_eff,
+    T_e*,
     B*,
+    *B_*,
     *Bt*,
     *Bx*,
     *Bz*,
@@ -169,3 +181,4 @@ ignore_names =
     *_OX_*,
     *_F,
     *eV,
+    I_not_dI,

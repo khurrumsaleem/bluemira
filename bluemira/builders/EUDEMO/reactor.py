@@ -35,10 +35,14 @@ from bluemira.builders.EUDEMO.ivc import InVesselComponentBuilder
 from bluemira.builders.EUDEMO.ivc.ivc import build_ivc_xz_shapes
 from bluemira.builders.EUDEMO.pf_coils import PFCoilsBuilder
 from bluemira.builders.EUDEMO.plasma import PlasmaBuilder
+from bluemira.builders.EUDEMO.power_cycle import SteadyStatePowerCycleSolver
 from bluemira.builders.EUDEMO.tf_coils import TFCoilsBuilder
 from bluemira.builders.EUDEMO.vacuum_vessel import VacuumVesselBuilder
 from bluemira.builders.radiation_shield import RadiationShieldBuilder
-from bluemira.builders.thermal_shield import ThermalShieldBuilder
+from bluemira.builders.thermal_shield import (
+    CryostatThermalShieldBuilder,
+    VacuumVesselThermalShieldBuilder,
+)
 from bluemira.codes import systems_code_solver
 from bluemira.codes.process import NAME as PROCESS
 
@@ -57,8 +61,11 @@ class EUDEMOReactor(Reactor):
     IVC = "In-Vessel Components"
     VACUUM_VESSEL = "Vacuum Vessel"
     THERMAL_SHIELD = "Thermal Shield"
+    VVTS = "Vacuum Vessel Thermal Shield"
+    CTS = "Cryostat Thermal Shield"
     CRYOSTAT = "Cryostat"
     RADIATION_SHIELD = "Radiation Shield"
+    POWER_CYCLE = "Power Cycle"
 
     def run(self) -> Component:
         """
@@ -76,12 +83,14 @@ class EUDEMOReactor(Reactor):
         component.add_child(self.build_vacuum_vessel(component, ivc_boundary))
         component.add_child(self.build_divertor(component, divertor_face))
         component.add_child(self.build_blanket(component, blanket_face))
+        thermal_shield = Component(self.THERMAL_SHIELD, parent=component)
+        thermal_shield.add_child(self.build_VV_thermal_shield(component))
         component.add_child(self.build_TF_coils(component))
         component.add_child(self.build_PF_coils(component))
-        component.add_child(self.build_thermal_shield(component))
+        thermal_shield.add_child(self.build_cryo_thermal_shield(component))
         component.add_child(self.build_cryostat(component))
         component.add_child(self.build_radiation_shield(component))
-
+        self.run_power_cycle()
         bluemira_print("Reactor Design Complete!")
 
         return component
@@ -91,24 +100,18 @@ class EUDEMOReactor(Reactor):
         """
         Run the systems code module in the requested run mode.
         """
-        default_config = {"process_mode": "run"}
-
+        # Use the generated/reference data dirs as read/run defaults,
+        # but these can be overridden for the specific systems code.
+        default_config = {
+            "read_dir": self._file_manager.reference_data_dirs["systems_code"],
+            "run_dir": self._file_manager.generated_data_dirs["systems_code"],
+        }
         config = self._process_design_stage_config(default_config)
-
-        # TODO: This is needed to support backward compatibility with the old
-        # process_mode configuration at the top level. Can be removed when the
-        # run_systems_code interface is updated to have a more general runmode value.
-        config["process_mode"] = config.pop("runmode")
-
-        solver = systems_code_solver(
-            self._params,
-            config,
-            self._file_manager.generated_data_dirs["systems_code"],
-            self._file_manager.reference_data_dirs["systems_code"],
-        )
+        run_mode = config.pop("runmode")
+        solver = systems_code_solver(self._params, config)
 
         self.register_solver(solver)
-        solver.run()
+        solver.execute(solver.run_mode_cls.from_string(run_mode))
         self._params.update_kw_parameters(solver.params.to_dict())
 
     @Reactor.design_stage(PLASMA)
@@ -180,8 +183,18 @@ class EUDEMOReactor(Reactor):
         plasma = component_tree.get_component(EUDEMOReactor.PLASMA)
         sep_comp: PhysicalComponent = plasma.get_component("xz").get_component("LCFS")
         sep_shape = sep_comp.shape.boundary[0]
+        thermal_shield = component_tree.get_component(self.THERMAL_SHIELD)
 
-        builder = TFCoilsBuilder(self._params.to_dict(), config, separatrix=sep_shape)
+        vvts_xz = (
+            thermal_shield.get_component(self.VVTS)
+            .get_component("xz")
+            .get_component("VVTS")
+            .shape.boundary[0]
+        )
+
+        builder = TFCoilsBuilder(
+            self._params.to_dict(), config, separatrix=sep_shape, keep_out_zone=vvts_xz
+        )
         self.register_builder(builder)
 
         return super()._build_stage()
@@ -207,17 +220,36 @@ class EUDEMOReactor(Reactor):
 
         return super()._build_stage()
 
-    @Reactor.design_stage(THERMAL_SHIELD)
-    def build_thermal_shield(self, component_tree: Component):
+    @Reactor.design_stage(VVTS)
+    def build_VV_thermal_shield(self, component_tree: Component):
         """
-        Run the thermal shield build.
+        Run the vacuum vessel thermal shield build.
+        """
+        vessel = component_tree.get_component(self.VACUUM_VESSEL).get_component("xz")
+
+        vv_koz = vessel.get_component("Body").shape.boundary[0]
+
+        default_config = {}
+        config = self._process_design_stage_config(default_config)
+
+        builder = VacuumVesselThermalShieldBuilder(
+            self._params.to_dict(), config, vv_koz=vv_koz
+        )
+
+        self.register_builder(builder)
+        return super()._build_stage()
+
+    @Reactor.design_stage(CTS)
+    def build_cryo_thermal_shield(self, component_tree: Component):
+        """
+        Run the cryostat thermal shield build.
         """
         # Prepare inputs
-        pf_coils = component_tree.get_component("PF Coils").get_component("xz")
+        pf_coils = component_tree.get_component(self.PF_COILS).get_component("xz")
         pf_kozs = [
             coil.get_component("casing").shape.boundary[0] for coil in pf_coils.children
         ]
-        tf_coils = component_tree.get_component("TF Coils").get_component("xz")
+        tf_coils = component_tree.get_component(self.TF_COILS).get_component("xz")
         tf_koz = (
             tf_coils.get_component("Casing").get_component("outer").shape.boundary[0]
         )
@@ -225,12 +257,11 @@ class EUDEMOReactor(Reactor):
         default_config = {}
         config = self._process_design_stage_config(default_config)
 
-        builder = ThermalShieldBuilder(
+        builder = CryostatThermalShieldBuilder(
             self._params.to_dict(),
             config,
             pf_coils_xz_kozs=pf_kozs,
             tf_xz_koz=tf_koz,
-            vv_xz_koz=None,
         )
         self.register_builder(builder)
 
@@ -322,10 +353,13 @@ class EUDEMOReactor(Reactor):
         """
         Run the cryostat vacuum vessel build.
         """
-        thermal_shield = component_tree.get_component(
-            EUDEMOReactor.THERMAL_SHIELD
-        ).get_component("xz")
-        cts = thermal_shield.get_component("Cryostat TS").shape.boundary[0]
+        thermal_shield = component_tree.get_component(self.THERMAL_SHIELD)
+        cts = (
+            thermal_shield.get_component(self.CTS)
+            .get_component("xz")
+            .get_component("Cryostat TS")
+            .shape.boundary[0]
+        )
 
         default_config = {}
         config = self._process_design_stage_config(default_config)
@@ -340,9 +374,7 @@ class EUDEMOReactor(Reactor):
         """
         Run the radiation shield build.
         """
-        cryostat = component_tree.get_component(EUDEMOReactor.CRYOSTAT).get_component(
-            "xz"
-        )
+        cryostat = component_tree.get_component(self.CRYOSTAT).get_component("xz")
         cryo_vv_xz = cryostat.get_component("Cryostat VV").shape
 
         default_config = {}
@@ -356,3 +388,13 @@ class EUDEMOReactor(Reactor):
         self.register_builder(builder)
 
         return super()._build_stage()
+
+    @Reactor.design_stage(POWER_CYCLE)
+    def run_power_cycle(self):
+        """
+        Run the power balance for the reactor.
+        """
+        solver = SteadyStatePowerCycleSolver(self._params)
+        self.register_solver(solver)
+        result = solver.execute()
+        self._params.update_kw_parameters(result)

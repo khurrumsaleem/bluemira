@@ -23,6 +23,10 @@
 Useful functions for bluemira geometries.
 """
 
+import datetime
+import inspect
+import json
+import os
 from copy import deepcopy
 from typing import Iterable, List, Optional, Sequence, Type, Union
 
@@ -32,12 +36,14 @@ from scipy.spatial import ConvexHull
 
 import bluemira.mesh.meshing as meshing
 from bluemira.base.constants import EPS
-from bluemira.base.look_and_feel import bluemira_warn
+from bluemira.base.file import get_bluemira_path
+from bluemira.base.look_and_feel import bluemira_debug, bluemira_warn
 from bluemira.codes import _freecadapi as cadapi
 from bluemira.geometry.base import BluemiraGeo, GeoMeshable
 from bluemira.geometry.coordinates import Coordinates
 from bluemira.geometry.error import GeometryError
 from bluemira.geometry.face import BluemiraFace
+from bluemira.geometry.plane import BluemiraPlane
 from bluemira.geometry.shell import BluemiraShell
 from bluemira.geometry.solid import BluemiraSolid
 from bluemira.geometry.wire import BluemiraWire
@@ -56,6 +62,119 @@ def convert(apiobj, label=""):
     else:
         raise ValueError(f"Cannot convert {type(apiobj)} object into a BluemiraGeo.")
     return output
+
+
+class BluemiraGeoEncoder(json.JSONEncoder):
+    """
+    JSON Encoder for BluemiraGeo.
+    """
+
+    def default(self, obj):
+        """
+        Override the JSONEncoder default object handling behaviour for BluemiraGeo.
+        """
+        if isinstance(obj, BluemiraGeo):
+            return serialize_shape(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super().default(obj)
+
+
+def _reconstruct_function_call(signature, *args, **kwargs) -> dict:
+    """
+    Reconstruct the call of a function with inputs arguments and defaults.
+    """
+    data = {}
+
+    # Inspect the function call and reconstruct defaults
+    for i, key in enumerate(signature.parameters.keys()):
+        if i < len(args):
+            data[key] = args[i]
+        else:
+            if key not in kwargs:
+                value = signature.parameters[key].default
+                if value != inspect._empty:
+                    data[key] = value
+            else:
+                data[key] = kwargs[key]
+
+    # Catch any kwargs not in signature
+    for k, v in kwargs.items():
+        if k not in data:
+            data[k] = v
+    return data
+
+
+def _make_debug_file(name) -> str:
+    """
+    Make a new file in the geometry debugging folder.
+    """
+    path = get_bluemira_path("generated_data/naughty_geometry", subfolder="")
+    now = datetime.datetime.now()
+    timestamp = now.strftime("%m-%d-%Y-%H-%M")
+    fmt_string = "{}-{}{}.json"
+    name = fmt_string.format(name, timestamp, "")
+    filename = os.path.join(path, name)
+
+    i = 0
+    while os.path.isfile(filename):
+        i += 1
+        increment = f"_{i}"
+        name = fmt_string.format(name, timestamp, increment)
+        filename = os.path.join(path, name)
+    return filename
+
+
+def log_geometry_on_failure(func):
+    """
+    Decorator for debugging of failed geometry operations.
+    """
+    signature = inspect.signature(func)
+    func_name = func.__name__
+
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except cadapi.FreeCADError as error:
+            data = _reconstruct_function_call(signature, *args, **kwargs)
+            filename = _make_debug_file(func_name)
+
+            # Dump the data in the file
+            try:
+                with open(filename, "w") as file:
+                    json.dump(data, file, indent=4, cls=BluemiraGeoEncoder)
+
+                bluemira_debug(
+                    f"Function call {func_name} failed. Debugging information was saved to: {filename}"
+                )
+            except Exception:
+                bluemira_warn(
+                    f"Failed to save the failed geometry operation {func_name} to JSON."
+                )
+
+            raise error
+
+    return wrapper
+
+
+def fallback_to(fallback_func, exception):
+    """
+    Decorator for a fallback to an alternative geometry operation.
+    """
+
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except exception:
+                bluemira_warn(
+                    f"{func.__name__} failed, falling back to {fallback_func.__name__}."
+                )
+                return fallback_func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 # # =============================================================================
@@ -103,11 +222,57 @@ def make_polygon(
     wire: BluemiraWire
         a bluemira wire that contains the polygon
     """
-    points = Coordinates(points).T
-    return BluemiraWire(cadapi.make_polygon(points, closed), label=label)
+    points = Coordinates(points)
+    if closed and points.closed:
+        points = Coordinates(points.points[:-1])
+    return BluemiraWire(cadapi.make_polygon(points.T, closed), label=label)
 
 
 def make_bspline(
+    poles, mults, knots, periodic, degree, weights, check_rational, label: str = ""
+):
+    """
+    Builds a B-Spline by a lists of Poles, Mults, Knots
+
+    Parameters
+    ----------
+    poles: Union[list, np.ndarray]
+        list of poles.
+    mults: Union[list, np.ndarray]
+        list of integers for the multiplicity
+    knots: Union[list, np.ndarray]
+        list of knots
+    periodic: bool
+        Whether or not the spline is periodic (same curvature at start and end points)
+    degree: int
+        bspline degree
+    weights: Union[list, np.ndarray]
+        sequence of float
+    check_rational: bool
+        Whether or not to check if the BSpline is rational
+
+    Returns
+    -------
+    wire: BluemiraWire
+    """
+    return BluemiraWire(
+        cadapi.make_bspline(
+            poles, mults, knots, periodic, degree, weights, check_rational
+        ),
+        label=label,
+    )
+
+
+def _make_polygon_fallback(points, label="", closed=False, **kwargs) -> BluemiraWire:
+    """
+    Overloaded function signature for fallback option from interpolate_bspline
+    """
+    return make_polygon(points, label, closed)
+
+
+@fallback_to(_make_polygon_fallback, cadapi.FreeCADError)
+@log_geometry_on_failure
+def interpolate_bspline(
     points: Union[list, np.ndarray],
     label: str = "",
     closed: bool = False,
@@ -137,9 +302,10 @@ def make_bspline(
     wire: BluemiraWire
         a bluemira wire that contains the bspline
     """
-    points = Coordinates(points).T
+    points = Coordinates(points)
     return BluemiraWire(
-        cadapi.make_bspline(points, closed, start_tangent, end_tangent), label=label
+        cadapi.interpolate_bspline(points.T, closed, start_tangent, end_tangent),
+        label=label,
     )
 
 
@@ -299,6 +465,49 @@ def wire_closure(bmwire: BluemiraWire, label="closure") -> BluemiraWire:
     return closure
 
 
+def _offset_wire_discretised(
+    wire,
+    thickness,
+    /,
+    join: str = "intersect",
+    open_wire: bool = True,
+    label="",
+    *,
+    fallback_method="square",
+    byedges=True,
+    ndiscr=200,
+    **fallback_kwargs,
+) -> BluemiraWire:
+    """
+    Fallback function for discretised offsetting
+
+    Raises
+    ------
+    GeometryError
+        If the wire is not closed. This function cannot handle the offet of an open
+        wire.
+    """
+    from bluemira.geometry._deprecated_offset import offset_clipper
+
+    if not wire.is_closed() and not open_wire:
+        wire = wire.deepcopy()
+        wire.close()
+
+    if not wire.is_closed() and open_wire:
+        raise GeometryError(
+            "Fallback function _offset_wire_discretised cannot handle open wires."
+        )
+
+    coordinates = wire.discretize(byedges=byedges, ndiscr=ndiscr)
+
+    result = offset_clipper(
+        coordinates, thickness, method=fallback_method, **fallback_kwargs
+    )
+    return make_polygon(result, label=label, closed=True)
+
+
+@fallback_to(_offset_wire_discretised, cadapi.FreeCADError)
+@log_geometry_on_failure
 def offset_wire(
     wire: BluemiraWire,
     thickness: float,
@@ -309,7 +518,7 @@ def offset_wire(
     *,
     fallback_method="square",
     byedges=True,
-    ndiscr=200,
+    ndiscr=400,
     **fallback_kwargs,
 ) -> BluemiraWire:
     """
@@ -349,22 +558,9 @@ def offset_wire(
     wire: BluemiraWire
         Offset wire
     """
-    try:
-        return BluemiraWire(
-            cadapi.offset_wire(wire._shape, thickness, join, open_wire), label=label
-        )
-    except cadapi.FreeCADError:
-        bluemira_warn(
-            "Primitive offsetting failed, falling back to discretised " "offsetting."
-        )
-        from bluemira.geometry._deprecated_offset import offset_clipper
-
-        coordinates = wire.discretize(byedges=byedges, ndiscr=ndiscr)
-
-        result = offset_clipper(
-            coordinates, thickness, method=fallback_method, **fallback_kwargs
-        )
-        return make_polygon(result, label=label)
+    return BluemiraWire(
+        cadapi.offset_wire(wire._shape, thickness, join, open_wire), label=label
+    )
 
 
 def convex_hull_wires_2d(
@@ -591,7 +787,7 @@ def split_wire(wire: BluemiraWire, vertex: Iterable, tolerance: float = EPS):
     return wire_1, wire_2
 
 
-def slice_shape(shape: BluemiraGeo, plane):
+def slice_shape(shape: BluemiraGeo, plane: BluemiraPlane):
     """
     Calculate the plane intersection points with an object
 
@@ -599,7 +795,7 @@ def slice_shape(shape: BluemiraGeo, plane):
     ----------
     shape: Union[BluemiraWire, BluemiraFace, BluemiraSolid, BluemiraShell]
         obj to intersect with a plane
-    plane: BluemiraPlacement
+    plane: BluemiraPlane
 
     Returns
     -------
@@ -611,7 +807,7 @@ def slice_shape(shape: BluemiraGeo, plane):
     Notes
     -----
     Degenerate cases such as tangets to solid or faces do not return intersections
-    if the shape and plane are acting at the Placement base.
+    if the shape and plane are acting at the Plane base.
     Further investigation needed.
 
     """
