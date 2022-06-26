@@ -10,8 +10,6 @@ Programming tools to make my life easier
 
 
 class Tools:
-
-    #
     @staticmethod
     def print_header():
         """

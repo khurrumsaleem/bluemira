@@ -1,42 +1,58 @@
 """
 Base classes for the power cycle model.
 """
-import numpy as np
+
+# Import
+# import numpy as np
+import matplotlib.pyplot as plt
+
+from bluemira.power_cycle.utilities import PowerCycleUtilities as imported_utilities
+
+# from scipy.interpolate import interp1d as imported_interp1d
 
 # #################################################################### #
-# ############################ POWER CURVE ########################### #
+# POWER DATA
 # #################################################################### #
 
 
-class PowerCurve:
+class PowerData:
     """
-    Power curve class to store a set of time and load vectors.
+    Data class to store a set of time and load vectors.
 
-    Takes a pair of (time,load) vectors and creates a PowerCurve object
-    used to represent the time evolution of a given power in the plant.
-    Values between vector points are not defined, since the dependence
-    with time is not specified when creating an instance of this class;
-    instead, it should be specified by creating instances of this class
-    within specialized power load classes such as:
-        - `GenericPowerLoad`
-        - `CoilPowerLoad`
-        - `BOPPowerLoad`
+    Takes a pair of (time,data) vectors and creates a PowerData object
+    used to build Power Loads objects to represent the time evolution
+    of a given power in the plant.
+    Instances of this class do not specify any dependence between the
+    data points it stores, so no method is defined for calculating
+    values (e.g. interpolation). Instead, this class should be called
+    by specialized classes such as `PowerLoad`.
 
     Parameters
     ----------
-    load: float
-        List of power values that define curve [W]
-    time: float
-        List of time values that define curve [s]
+    data: `float`
+        List of power values that define the PowerData [W]
+    time: `float`
+        List of time values that define the PowerData [s]
     """
 
     # ---------------------------------------------------------------- #
-    # -------------------------- CONSTRUCTOR ------------------------- #
+    # CLASS ATTRIBUTES
     # ---------------------------------------------------------------- #
-    def __init__(self, load, time):
+
+    # Plot defaults (arguments for `matplotlib.pyplot.scatter`)
+    plot_defaults = {
+        "c": "k",  # Marker color
+        "s": 100,  # Marker size
+        "marker": "*",  # Marker style
+    }
+
+    # ---------------------------------------------------------------- #
+    # CONSTRUCTOR
+    # ---------------------------------------------------------------- #
+    def __init__(self, time, data):
 
         # Validate inputs
-        self.load = self.__validate_input(load)
+        self.data = self.__validate_input(data)
         self.time = self.__validate_input(time)
 
         # Verify time is an increasing vector
@@ -45,8 +61,8 @@ class PowerCurve:
         # Validate created instance
         self.__sanity()
 
-    @staticmethod
-    def __validate_input(input):
+    @classmethod
+    def __validate_input(self, input):
         """
         Validate an input for class instance creation to be a list of
         floats.
@@ -54,16 +70,17 @@ class PowerCurve:
         for i in input:
             if not isinstance(i, (int, float)):
                 print(
-                    """
+                    f"""
                     The inputs used to create an instance of the
-                    'PowerCurve' class must be lists of floats.
+                    {self.__class__.__name__} class must be lists of
+                    floats.
                     """
                 )
                 raise TypeError()
         return input
 
-    @staticmethod
-    def __is_increasing(input):
+    @classmethod
+    def __is_increasing(self, input):
         """
         Validate an input for class instance creation to be an
         increasing list.
@@ -74,9 +91,10 @@ class PowerCurve:
 
         if not all(check_increasing):
             print(
-                """
-                    The 'time' input used to create an instance of the
-                    'PowerCurve' class must be an increasing list.
+                f"""
+                    The `time` input used to create an instance of the
+                    {self.__class__.__name__} class must be an
+                    increasing list.
                     """
             )
             raise ValueError()
@@ -84,15 +102,15 @@ class PowerCurve:
 
     def __sanity(self):
         """
-        Validate that 'load' and 'time' attributes both have the same
-        length, so that they can be used to generate a PowerCurve.
+        Validate that `data` and `time` attributes both have the same
+        length, so that they univocally represent power values in time.
         """
-        length_load = len(self.load)
+        length_data = len(self.data)
         length_time = len(self.time)
-        if length_load != length_time:
+        if length_data != length_time:
             print(
                 f"""
-                The attributes 'load' and 'time' of an instance of the
+                The attributes `data` and `time` of an instance of the
                 {self.__class__.__name__} class must have the same
                 length.
                 """
@@ -100,163 +118,157 @@ class PowerCurve:
             raise ValueError()
 
     # ---------------------------------------------------------------- #
-    # -------------------------- OPERATIONS -------------------------- #
+    # OPERATIONS
     # ---------------------------------------------------------------- #
-    @staticmethod
-    def _validate_PowerCurve(object):
+    @classmethod
+    def _validate_PowerData(self, object):
         """
-        Validate 'object' to be an instance of the PowerCurve class.
+        Validate `object` to be an instance of the this class.
         """
-        if not isinstance(object, PowerCurve):
+        if not isinstance(object, PowerData):
             print(
-                """
-                The tested object is not an instance of the PowerCurve
-                class.
+                f"""
+                The tested object is not an instance of the
+                {self.__class__.__name__} class.
                 """
             )
             raise TypeError()
         return object
 
+    # ---------------------------------------------------------------- #
+    # VISUALIZATION
+    # ---------------------------------------------------------------- #
+    def plot(self, **kwargs):
+
+        # Retrieve default plot options
+        default = self.plot_defaults
+
+        # Set each default options in kwargs, if not specified
+        kwargs = imported_utilities.add_dict_entries(kwargs, default)
+
+        # Retrieve instance characteristics
+        time = self.time
+        data = self.data
+
+        # Plot
+        plt.scatter(time, data, **kwargs)
+        plt.show()
+
 
 # #################################################################### #
-# ######################## GENERIC POWER LOAD ######################## #
+# GENERIC POWER LOAD
 # #################################################################### #
-class GenericPowerLoad:
+
+
+'''
+class PowerLoad:
     """
-    Generic power load calculator.
+    Generic representation of a power load curve.
 
-    Takes a 'model' specification and applies to a set of 'load' and
-    'time' vectors to generate a power load curve.
+    Defines a power load curve with a set of `data` and `time` vectors
+    and a `model` specification to compute additional values between
+    data points.
 
     Parameters
     ----------
-    model: str
-        Type of model to apply to 'load' and 'time' to generate curve
-    load: str
-        List of power values separated by ',' that define curve [W]
-    time: str
-        List of time values separated by ',' that define curve [s]
+    model: `str`
+        Type of model to apply to `data` and `time` to generate curve
+    data: `float`
+        List of power values that define curve [W]
+    time: `float`
+        List of time values that define curve [s]
+
+    Attributes
+    ----------
+    curve: `PowerCurve`
+        Original `data` and `time` data used to define instance.
     """
 
-    # Number of points in each curve segment
-    n_points = 100
+    # ---------------------------------------------------------------- #
+    # CLASS ATTRIBUTES
+    # ---------------------------------------------------------------- #
+
+    # Plot defaults (arguments for `matplotlib.pyplot.plot`)
+    plot_defaults = {
+        "c": "k",           # Line color
+        "lw": 2,            # Line width
+        "ls": "-",          # Line style
+    }
+    n_points = 100          # number of points in each curve segment
 
     # Implemented models (add model name here after implementation)
     valid_models = ["ramp", "step"]
 
-    # Default plot characteristics (same as `matplotlib`)
-    plot_defaults = {
-        "color": "k",  # Marker color
-        "s": "100",  # Marker size
-    }
-
     # ---------------------------------------------------------------- #
-    # -------------------------- CONSTRUCTOR ------------------------- #
+    # CONSTRUCTOR
     # ---------------------------------------------------------------- #
-    def __init__(self, model, load, time):
-
-        # Validate inputs
-        model = self.__validate_input(model)
-        load = self.__validate_input(load)
-        time = self.__validate_input(time)
+    def __init__(self, model, data, time):
 
         # Validate & store model
         self.model = self.__validate_model(model)
 
-        # Validate vectors
-        load = self.__validate_vector(load)
-        time = self.__validate_vector(time)
+        # Create & store PowerCurve with original input data
+        self.curve = PowerData(data, time)
 
-        # Create & store PowerCurve
-        self.curve = PowerCurve(load, time)
-
-        # Validate created instance
-        self.__sanity()
-
-    @staticmethod
-    def __validate_input(input):
-        """
-        Validate an input for class instance creation to be a string,
-        and remove list-indicator characters.
-        """
-        if isinstance(input, str):
-            input = input.replace("[", "")
-            input = input.replace("]", "")
-            return input
-        else:
-            print(
-                """
-                The inputs used to create an instance of the
-                'PowerLoad' class must all be strings.
-                """
-            )
-            raise TypeError()
-
-    @staticmethod
-    def __validate_model(model):
+    @classmethod
+    def __validate_model(cls, model):
         """
         Validate 'model' input.
         """
-        return model
-
-    @staticmethod
-    def __validate_vector(vector):
-        """
-        Validate vector inputs and convert them to numeric lists.
-        """
-        # Split string into elements and convert them into floats
-        vector = vector.replace(" ", "")
-        vector = vector.split(",")
-        vector = [float(i) for i in vector]
-        return vector
-
-    # ---------------------------------------------------------------- #
-    # ----------------------- CURVE GENERATION ----------------------- #
-    # ---------------------------------------------------------------- #
-    def generate_curve(self):
-        """
-        Select which load curve model to apply, and generate power load
-        curve.
-        """
-        load = self.curve.load
-        time = self.curve.time
-        model = self.model
-        n_points = self.n_points
-
-        # Select model to be applied
-        if model in self.valid_models:
-            method_name = "generate_" + model
-            generate_segment = getattr(self, method_name)
-        else:
+        valid_models = cls.valid_models
+        msg_models = ", ".join(valid_models)
+        if model not in valid_models:
             print(
-                f"""'
-                Unknown 'model' for {self.__class__.__name__} class.
+                f"""
+                The argument given for the attribute `model` is not a
+                valid value. Only the following models are currently
+                implemented in class {cls.__class__.__name__}:
+                {msg_models}.
                 """
             )
             raise ValueError()
 
-        # Preallocate outputs
-        expanded_time = []
-        expanded_load = []
+        return model
 
-        # Number of curve segments
-        n_segments = len(self.load) - 1
+    @classmethod
+    def _error(cls, type):
 
-        # For each curve segment (pair of points)
-        for s in range(n_segments):
-            first = (time[s], load[s])
-            last = (time[s + 1], load[s + 1])
-            time_s, load_s = generate_segment(first, last, n_points)
-            expanded_time = expanded_time + time_s
-            expanded_load = expanded_load + load_s
+        # ---------------------------------------------------------------- #
+        # OPERATIONS
+        # ---------------------------------------------------------------- #
 
-        # Store & return curve
-        curve = PowerCurve(expanded_load, expanded_time)
-        # curve = {"power": expanded_load, "times": expanded_time}
-        self.curve = curve
-        return curve
+    def load(self, time):
+        """
+        Calculate power load values at the specified times, based on
+        the defined `curve` and `model`.
+
+        Parameters
+        ----------
+        time: `float`
+            List of time values [s]
+
+        Returns
+        -------
+        data: `float`
+            List of power values [W]
+
+        """
+
+        # Retrieve PowerLoad `data`, `time` and `model`
+        data = self.curve.data
+        time = self.curve.time
+        model = self.model
+
+        # Validate `model`
+        if model == 'ramp':
+
+        elif model == 'step':
+
+        else:
 
     '''
+
+'''
     @staticmethod
     def interpolate_load(old_PowerCurve, new_time):
         """
@@ -279,7 +291,7 @@ class GenericPowerLoad:
         y = old_PowerCurve.load
         k = 'linear'
         f = float("nan")
-        old_lookup = INTERP1D(x, y, kind=k, fill_value=f)
+        old_lookup = imported_interp1d(x, y, kind=k, fill_value=f)
 
         # First and last elements in `old_PowerCurve` time
         old_first = x[0]
@@ -307,79 +319,4 @@ class GenericPowerLoad:
                 new_load[i] = load_value.tolist()
 
         return new_load
-    '''
-
-    @staticmethod
-    def generate_ramp(first, last, n_points):
-        """
-        Generate curve segment using 'ramp' model.
-
-        Parameters
-        ----------
-        first: tuple
-            First point in curve segment ([s],[W])
-        last: tuple
-            Last point in curve segment ([s],[W])
-        n_points: int
-            Number of points in curve segment
-        """
-        x1, y1 = first
-        x2, y2 = last
-        a, b = np.polyfit([x1, x2], [y1, y2], 1)
-        expanded_time = np.linspace(x1, x2, n_points).tolist()
-        expanded_load = [a * t + b for t in expanded_time]
-        return expanded_time, expanded_load
-
-    @staticmethod
-    def generate_step(first, last, n_points):
-        """
-        Generate curve segment using 'ramp' model.
-
-        Parameters
-        ----------
-        first: tuple
-            First point in curve segment ([s],[W])
-        last: tuple
-            Last point in curve segment ([s],[W])
-        n_points: int
-            Number of points in curve segment
-        """
-
-    # ---------------------------------------------------------------- #
-    # ------------------------- VISUALIZATION ------------------------ #
-    # ---------------------------------------------------------------- #
-    """
-    def plot(self, **kwargs):
-
-        # Retrieve default parameters
-        default_kwargs = self.plot_defaults
-        default_parameters = default_kwargs.keys()
-        #n_parameters = len(default_parameters)
-
-        # Preallocate extended kwargs
-        extended_kwargs = kwargs
-
-        # For each default parameter
-        for parameter in default_parameters:
-
-            # Check if parameter is specified by user
-            if parameter not in kwargs:
-
-                # Default value
-                value = default_kwargs[parameter]
-
-                # Add parameter to kwargs
-                extended_kwargs[parameter] = value
-
-        # Retrieve number of points to plot per curve segment
-        n_points = self.n_points
-
-        # Retrieve curve characteristics
-        time = self.time
-        load = self.load
-
-        # Number of curve points
-        n_segments
-
-        plt.scatter(this_time, this_load, color="b", s=m_size)
-    """
+'''
