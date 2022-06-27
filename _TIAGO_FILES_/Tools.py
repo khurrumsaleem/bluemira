@@ -11,13 +11,17 @@ Programming tools to make my life easier
 
 class Tools:
     @staticmethod
-    def print_header():
+    def print_header(header=None):
         """
         Print a set of header lines to separate different script runs
         in the terminal.
         """
-        # Header
-        header = " NEW RUN "
+        # Validate header
+        if not header:
+            header = "NEW RUN"
+
+        # Build header
+        header = " " + header + " "
         header = header.center(72, "=")
 
         # Print Header
