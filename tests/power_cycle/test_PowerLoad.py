@@ -1,11 +1,13 @@
 # Import
-# import sys
 import matplotlib.pyplot as plt
-import numpy as np
 
 # from scipy.interpolate import interp1d as imported_interp1d
 from _TIAGO_FILES_.Tools import Tools as imported_tools
-from bluemira.power_cycle.base import PowerLoad as imported_class
+from bluemira.power_cycle.base import PowerData as imported_class_1
+from bluemira.power_cycle.base import PowerLoad as imported_class_2
+
+# import numpy as np
+
 
 # Header
 imported_tools.print_header("Test PowerLoad")
@@ -14,23 +16,33 @@ imported_tools.print_header("Test PowerLoad")
 model_1 = "ramp"
 time_1 = [0, 4, 7, 8]
 data_1 = [6, 9, 7, 8]
+load_1 = imported_class_1(time_1, data_1)
 model_2 = "step"
 time_2 = [2, 5, 7, 9, 10]
 data_2 = [2, 2, 2, 4, 4]
-
-# Test `_refine_vector` method
-refined_time_1 = imported_class._refine_vector(time_1, 3)
-print(refined_time_1)
-refined_time_2 = imported_class._refine_vector(time_2, 0)
-print(refined_time_2)
+load_2 = imported_class_1(time_2, data_2)
 
 # Create instances of PowerLoad
-instance_1 = imported_class(time_1, data_1, model_1)
-instance_2 = imported_class(time_2, data_2, model_2)
+instance_1 = imported_class_2(load_1, model_1, name="Test 1")
+instance_2 = imported_class_2(load_2, model_2, name="Test 2")
+
+# Test `_refine_vector` method
+refined_time_1 = imported_class_2._refine_vector(time_1, 3)
+print(refined_time_1)
+refined_time_2 = imported_class_2._refine_vector(time_2, 0)
+print(refined_time_2)
 
 # Test visualization method
-instance_1.plot()
-instance_2.plot()
+plt.figure()
+plt.grid()
+instance_1.plot(c="r")
+instance_2.plot(c="b")
+
+# Test addition method
+plt.figure()
+plt.grid()
+instance_3 = instance_1 + instance_2
+instance_3.plot(detailed=True)
 
 # Show plots
 plt.show()
