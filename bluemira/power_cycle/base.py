@@ -1,11 +1,10 @@
 """
 Base classes for the power cycle model.
 """
-
-import matplotlib.pyplot as plt
-
 # Import
 import numpy as np
+
+# import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d as imported_interp1d
 
 from bluemira.power_cycle.utilities import PowerCycleUtilities as imported_utilities
@@ -29,6 +28,8 @@ class PowerData:
 
     Parameters
     ----------
+    name: `str`
+        Description of the `PowerData` instance.
     time: `float`
         List of time values that define the PowerData. [s]
     data: `float`
@@ -40,7 +41,7 @@ class PowerData:
     # ------------------------------------------------------------------
 
     # Plot defaults (arguments for `matplotlib.pyplot.scatter`)
-    plot_defaults = {
+    _plot_defaults = {
         "c": "k",  # Marker color
         "s": 100,  # Marker size
         "marker": "x",  # Marker style
@@ -49,7 +50,10 @@ class PowerData:
     # ------------------------------------------------------------------
     # CONSTRUCTOR
     # ------------------------------------------------------------------
-    def __init__(self, time, data):
+    def __init__(self, name, time, data):
+
+        # Validate name
+        self.name = self._validate_name(name)
 
         # Validate inputs
         self.data = self._validate_input(data)
@@ -60,6 +64,20 @@ class PowerData:
 
         # Validate created instance
         self._sanity()
+
+    @classmethod
+    def _validate_name(cls, name):
+        """
+        Validate a name for class instance creation to be a string.
+        """
+        if not isinstance(name, (str)):
+            raise TypeError(
+                f"""
+                The 'name' used to create an instance of the
+                {cls.__class__.__name__} class must be a `str`.
+                """
+            )
+        return name
 
     @classmethod
     def _validate_input(cls, input):
@@ -134,7 +152,7 @@ class PowerData:
     # ------------------------------------------------------------------
     # VISUALIZATION
     # ------------------------------------------------------------------
-    def plot(self, **kwargs):
+    def plot(self, ax=None, **kwargs):
         """
         Plot the points that define the `PowerData` instance.
 
@@ -145,27 +163,44 @@ class PowerData:
 
         Parameters
         ----------
-        **kwargs = `dict``
+        ax: `Axes`
+            Instance of the `matplotlib.axes.Axes` class. By default,
+            the currently selected axes are used.
+        **kwargs = `dict`
             Options for the `scatter` method.
         """
 
+        # Validate axes
+        ax = imported_utilities.validate_axes(ax)
+
         # Retrieve default plot options
-        default = self.plot_defaults
+        default = self._plot_defaults
 
         # Set each default options in kwargs, if not specified
         kwargs = imported_utilities.add_dict_entries(kwargs, default)
 
         # Retrieve instance characteristics
+        name = self.name
         time = self.time
         data = self.data
 
         # Plot
-        plt.scatter(time, data, **kwargs)
+        plot_obj = ax.scatter(time, data, label=name, **kwargs)
+        # imported_utilities.apply_plot_options(plot_obj, **kwargs)
+
+        # Add text to plot
+        plot_obj = ax.text(time[-1], data[-1], f"{name} (PowerData)")
+        # imported_utilities.apply_plot_options(ax, **kwargs)
+
+        # Return plot object
+        return plot_obj
 
 
 # ######################################################################
 # GENERIC POWER LOAD
 # ######################################################################
+
+
 class PowerLoad:
     """
     Generic representation of a power load curve.
@@ -177,8 +212,7 @@ class PowerLoad:
     Parameters
     ----------
     name: 'str'
-        Description of the `PowerLoad` instance. Set by default to
-        'Instance of Power Load'.
+        Description of the `PowerLoad` instance.
     load: `PowerData` or `list`[`PowerData`]
         Collection of instances of the `PowerData` class that define
         the `PowerLoad` object.
@@ -193,21 +227,18 @@ class PowerLoad:
     # CLASS ATTRIBUTES
     # ------------------------------------------------------------------
 
-    # Default name
-    name_default = "Instance of PowerLoad"
-
     # Default number of points in each curve segment
-    n_points = 100
+    _n_points = 100
 
     # Plot defaults (arguments for `matplotlib.pyplot.plot`)
-    plot_defaults = {
+    _plot_defaults = {
         "c": "k",  # Line color
         "lw": 2,  # Line width
         "ls": "-",  # Line style
     }
 
     # Detailed plot defaults (arguments for `matplotlib.pyplot.plot`)
-    detailed_defaults = {
+    _detailed_defaults = {
         "c": "k",  # Line color
         "lw": 1,  # Line width
         "ls": "--",  # Line style
@@ -464,7 +495,7 @@ class PowerLoad:
         must be non-negative integer.
         """
         if not n_points:
-            n_points = cls.n_points
+            n_points = cls._n_points
         else:
             n_points = int(n_points)
             if n_points < 0:
@@ -504,7 +535,7 @@ class PowerLoad:
         # Output refined vector
         return refined_vector
 
-    def plot(self, n_points=None, detailed=False, **kwargs):
+    def plot(self, ax=None, n_points=None, detailed=False, **kwargs):
         """
         Plot a `PowerLoad` curve, built using the attributes that define
         the instance. The number of points interpolated in each curve
@@ -531,12 +562,15 @@ class PowerLoad:
             `PowerData` instances (computed with their respective
             `model` entries), that summed result in the normal plotted
             curve. By default this input is set to `False`.
-        **kwargs = `dict``
-            Options for the `scatter` method.
+        **kwargs = `dict`
+            Options for the `plot` method.
         """
 
+        # Validate axes
+        ax = imported_utilities.validate_axes(ax)
+
         # Retrieve default plot options (main curve)
-        default = self.plot_defaults
+        default = self._plot_defaults
 
         # Set each default options in kwargs, if not specified
         kwargs = imported_utilities.add_dict_entries(kwargs, default)
@@ -545,6 +579,7 @@ class PowerLoad:
         n_points = self._validate_n_points(n_points)
 
         # Retrieve instance attributes
+        name = self.name
         load = self.load
         model = self.model
 
@@ -573,16 +608,16 @@ class PowerLoad:
 
         # Compute complete curve and plot as line
         curve = self.curve(time)
-        plt.plot(time, curve, **kwargs)
+        plot_obj = ax.plot(time, curve, label=name, **kwargs)
+
+        # Add descriptive label to main curve
+        plot_obj = ax.text(time[1], curve[1], f"{name} (PowerLoad)")
 
         # Validate `detailed` option
         if detailed:
 
-            # Add descriptive label to main curve
-            plt.text(time[1], curve[1], "PowerLoad")
-
             # Retrieve default plot options (detailed curves)
-            default = self.detailed_defaults
+            default = self._detailed_defaults
 
             # Modify plot options for detailed curves
             kwargs.update(default)
@@ -602,8 +637,12 @@ class PowerLoad:
                 )
 
                 # Plot current curve as line with descriptive label
-                plt.plot(time, current_curve, **kwargs)
-                plt.text(time[-1], current_curve[-1], f"PowerData {e+1}")
+                plot_obj = ax.plot(time, current_curve, **kwargs)
+                # imported_utilities.apply_plot_options(plot_obj, **kwargs)
 
                 # Plot PowerData with same plot options
-                current_powerdata.plot(**kwargs)
+                plot_obj = current_powerdata.plot(**kwargs)
+                # imported_utilities.apply_plot_options(plot_obj, **kwargs)
+
+            # Return plot object
+            return plot_obj

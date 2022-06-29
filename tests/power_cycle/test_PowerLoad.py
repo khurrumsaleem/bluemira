@@ -13,14 +13,16 @@ from bluemira.power_cycle.base import PowerLoad as imported_class_2
 imported_tools.print_header("Test PowerLoad")
 
 # Test data
-model_1 = "ramp"
+name_1 = "test_1"
 time_1 = [0, 4, 7, 8]
 data_1 = [6, 9, 7, 8]
-load_1 = imported_class_1(time_1, data_1)
-model_2 = "step"
+load_1 = imported_class_1(name_1, time_1, data_1)
+model_1 = "ramp"
+name_2 = "test_2"
 time_2 = [2, 5, 7, 9, 10]
 data_2 = [2, 2, 2, 4, 4]
-load_2 = imported_class_1(time_2, data_2)
+load_2 = imported_class_1(name_2, time_2, data_2)
+model_2 = "step"
 
 # Create instances of PowerLoad
 instance_1 = imported_class_2(load_1, model_1, name="Test 1")
