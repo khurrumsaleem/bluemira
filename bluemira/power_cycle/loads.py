@@ -47,6 +47,10 @@ class PowerData:
         "marker": "x",  # Marker style
     }
 
+    # Plot text settings (for `matplotlib.pyplot.text`)
+    _text_angle = 45  # rotation angle
+    _ind_point = 0  # index of (time,data) point used for location
+
     # ------------------------------------------------------------------
     # CONSTRUCTOR
     # ------------------------------------------------------------------
@@ -202,9 +206,11 @@ class PowerData:
         plot_list.append(plot_obj)
 
         # Add text to plot
+        index = self._ind_point
         text = f"{name} (PowerData)"
         label = name + " (name)"
-        plot_obj = ax.text(time[-1], data[-1], text, label=label)
+        angle = self._text_angle
+        plot_obj = ax.text(time[index], data[index], text, label=label, rotation=angle)
         plot_list.append(plot_obj)
 
         # Return plot object
@@ -259,6 +265,10 @@ class PowerLoad:
         "lw": 1,  # Line width
         "ls": "--",  # Line style
     }
+
+    # Plot text settings (for `matplotlib.pyplot.text`)
+    _text_angle = 45  # rotation angle
+    _ind_point = -1  # index of (time,data) point used for location
 
     # Implemented models (add model name here after implementation)
     valid_models = ["ramp", "step"]
@@ -647,9 +657,11 @@ class PowerLoad:
         plot_list.append(plot_obj)
 
         # Add descriptive label to curve
+        index = self._ind_point
         text = f"{name} (PowerLoad)"
         label = name + " (name)"
-        plot_obj = ax.text(time[1], curve[1], text, label=label)
+        angle = self._text_angle
+        plot_obj = ax.text(time[index], curve[index], text, label=label, rotation=angle)
         plot_list.append(plot_obj)
 
         # Validate `detailed` option

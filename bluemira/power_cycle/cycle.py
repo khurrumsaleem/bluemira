@@ -12,6 +12,19 @@ Full power cycle model object, used to visualize results.
 
 
 class PowerCycleTimeline:
+    """
+    Class to create a pulse timeline for Power Cycle simulations.
+
+    Parameters
+    ----------
+    name: 'str'
+        Description of the `PhaseLoad` instance.
+    durations: `dict`
+        Duration of each
+    load: `PowerLoad` or `list`[`PowerLoad`]
+        Collection of instances of the `PowerData` class that define
+        the `PowerLoad` object.
+    """
 
     pass
 
