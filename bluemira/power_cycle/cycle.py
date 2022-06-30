@@ -2,16 +2,269 @@
 Full power cycle model object, used to visualize results.
 """
 # import sys
-import json
-import os
+# import json
+# import os
+# import numpy as np
 
-import numpy as np
-
-# from scipy.interpolate import interp1d as imported_interp1d
-
-# import matplotlib.pyplot as plt
+# ######################################################################
+# TIMELINE
+# ######################################################################
 
 
+class PowerCycleTimeline:
+
+    pass
+
+
+'''
+class GenericPowerLoad:
+    """
+
+    Attributes
+    ----------
+    load: `PowerData`
+        Original `time` and `data` data used to define instance.
+
+    """
+
+    # Generate & store PowerCurve using model specification
+    # self.curve = generate_curve(self)
+
+    @staticmethod
+    def __validate_input(input):
+        """
+        Validate an input for class instance creation to be a string,
+        and remove list-indicator characters.
+        """
+        if isinstance(input, str):
+            input = input.replace("[", "")
+            input = input.replace("]", "")
+            return input
+        else:
+            print(
+                """
+                The inputs used to create an instance of the
+                'PowerLoad' class must all be strings.
+                """
+            )
+            raise TypeError()
+
+    @staticmethod
+    def __validate_vector(vector):
+        """
+        Validate vector inputs and convert them to numeric lists.
+        """
+        # Split string into elements and convert them into floats
+        vector = vector.replace(" ", "")
+        vector = vector.split(",")
+        vector = [float(i) for i in vector]
+        return vector
+
+
+
+    # ---------------------------------------------------------------- #
+    # CURVE GENERATION
+    # ---------------------------------------------------------------- #
+    def generate_curve(self, n_points=0):
+        """
+        Select which load curve model to apply, and generate power load
+        curve with an extra `n_points` values in each curve segment.
+
+        Parameters
+        ----------
+        n_points: `int`
+            Number of points interpolated in each curve segment.
+            The default value is 0, which would return the same curve
+            stored in the instance attribute `input`. Instead, it
+            forces the method to retrieve the default number of
+            interpolation points defined in the class attribute of
+            same name.
+        """
+        input = self.input
+        model = self.model
+
+        # If necessary, retrieve default number of interpolation points
+        if n_points == 0:
+            n_points = self.n_points
+
+        # Retrieve load and time to build curve
+        load = input.load
+        time = input.time
+
+        # Select model to be applied
+        if model in self.valid_models:
+            method_name = "generate_" + model
+            generate_segment = getattr(self, method_name)
+        else:
+            print(
+                f"""'
+                Unknown 'model' for {self.__class__.__name__} class.
+                """
+            )
+            raise ValueError()
+
+        # Preallocate outputs
+        expanded_time = []
+        expanded_load = []
+
+        # Number of curve segments
+        n_segments = len(self.load) - 1
+
+        # For each curve segment (pair of points)
+        for s in range(n_segments):
+            first = (time[s], load[s])
+            last = (time[s + 1], load[s + 1])
+            time_s, load_s = generate_segment(first, last, n_points)
+            expanded_time = expanded_time + time_s
+            expanded_load = expanded_load + load_s
+
+        # Store & return curve
+        curve = PowerData(expanded_load, expanded_time)
+        return curve
+
+    @staticmethod
+    def interpolate_load(old_PowerCurve, new_time):
+        """
+        Applies the `interpolate` method of the package `scipy` to
+        derive a new load vector for a desired time vector, based on an
+        instance of the PowerCurve class for the interpolation.
+
+        Parameters
+        ----------
+        old_PowerCurve: instance of the PowerCurve class
+        new_time: float
+
+        Returns
+        -------
+        new_load: float
+        """
+
+        # Create general interpolating function
+        x = old_PowerCurve.time
+        y = old_PowerCurve.load
+        k = 'linear'
+        f = float("nan")
+        old_lookup = imported_interp1d(x, y, kind=k, fill_value=f)
+
+        # First and last elements in `old_PowerCurve` time
+        old_first = x[0]
+        old_last = x[-1]
+
+        # First and last elements in x
+        # x_first = x[0]
+        # x_last = x[-1]
+
+        # Preallocate `new_load`
+        n_new = len(new_time)
+        new_load = [0] * n_new
+
+        # Look-up values for `new_time` if necessary
+        index_range = range(n_new)
+        for i in index_range:
+
+            # Current time
+            t = new_time[i]
+
+            # Check if t is out-of-bounds of `old_time`
+            t_below_first = t < old_first
+            t_above_last = t > old_last
+            t_outbound = t_below_first or t_above_last
+
+            # Only interpolate if t is in-bounds
+            if not t_outbound:
+                load_value = old_lookup(t)
+                new_load[i] = load_value.tolist()
+
+        return new_load
+
+    @staticmethod
+    def generate_ramp(first, last, n_points):
+        """
+        Generate curve segment using 'ramp' model.
+
+        Parameters
+        ----------
+        first: tuple
+            First point in curve segment ([s],[W])
+        last: tuple
+            Last point in curve segment ([s],[W])
+        n_points: int
+            Number of points in curve segment
+        """
+        x1, y1 = first
+        x2, y2 = last
+        a, b = np.polyfit([x1, x2], [y1, y2], 1)
+        expanded_time = np.linspace(x1, x2, n_points).tolist()
+        expanded_load = [a * t + b for t in expanded_time]
+        return expanded_time, expanded_load
+
+    @staticmethod
+    def generate_step(first, last, n_points):
+        """
+        Generate curve segment using 'ramp' model.
+
+        Parameters
+        ----------
+        first: tuple
+            First point in curve segment ([s],[W])
+        last: tuple
+            Last point in curve segment ([s],[W])
+        n_points: int
+            Number of points in curve segment
+        """
+    # ---------------------------------------------------------------- #
+    # ------------------------- VISUALIZATION ------------------------ #
+    # ---------------------------------------------------------------- #
+    """
+    def plot(self, **kwargs):
+        """
+        Parameters
+        ----------
+        n_points: `int`
+            Number of points interpolated in each curve segment.
+            The default value is 0, which would return the same curve
+            stored in the instance attribute `input`. Instead, it
+            forces the method to retrieve the default number of
+            interpolation points defined in the class attribute of
+            same name.
+        """
+
+        # Retrieve default parameters
+        default_kwargs = self.plot_defaults
+        default_parameters = default_kwargs.keys()
+        # n_parameters = len(default_parameters)
+
+        # Preallocate extended kwargs
+        extended_kwargs = kwargs
+
+        # For each default parameter
+        for parameter in default_parameters:
+
+            # Check if parameter is specified by user
+            if parameter not in kwargs:
+
+                # Default value
+                value = default_kwargs[parameter]
+
+                # Add parameter to kwargs
+                extended_kwargs[parameter] = value
+
+        # Retrieve number of points to plot per curve segment
+        n_points = self.n_points
+
+        # Retrieve curve characteristics
+        time = self.time
+        load = self.load
+
+        # Number of curve points
+        n_segments
+
+        plt.scatter(this_time, this_load, color="b", s=m_size)
+    """
+'''
+
+
+'''
 # #################################################################### #
 # ######################## POWER LOAD MANAGER ######################## #
 # #################################################################### #
@@ -133,12 +386,25 @@ class PowerLoadManager:
     # ---------------------------------------------------------------- #
 
     """
-    def superimpose(self, other):
-        '''
-        Super-imposes another PowerCurve instance onto this. This method
-        applies interpolation for any data point that does not have a
-        respective counterpoint in both instances.
-        '''
+
+        def superimpose(self, other):
+        """
+        Create a new instance of the `PowerLoad` class by superimposing
+        another instance onto this.
+
+        This method applies the `curve` method to create new `load`
+        points for any data point that does not exist in both instances.
+
+        Parameters
+        ----------
+        other: `PowerLoad`
+            Other instace to be sumper-imposed onto this instance.
+
+        Returns
+        -------
+        another: `float`
+            List of power values [W]
+        """
 
         # Validate `this` and `other`
         this = self._validate_PowerCurve(self)
@@ -166,7 +432,6 @@ class PowerLoadManager:
         # Build & output new PowerCurve
         another = PowerCurve(another_load, another_time)
         return another
-    """
 
     def _build_phase_load(self, load_data, phase):
 
@@ -291,10 +556,12 @@ class PowerLoadManager:
             # Store system curves
             # category_curves[load_key] = pulse_load
             # system_curves[time_key] = pulse_time
-    """
+
 
 
 # #################################################################### #
 # ######################### POWER CYCLE MODEL ######################## #
 # #################################################################### #
 # class PowerCycleModel:
+
+'''

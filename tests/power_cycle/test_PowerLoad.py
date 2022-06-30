@@ -1,13 +1,13 @@
 # Import
+# import numpy as np
+from pprint import pprint
+
 import matplotlib.pyplot as plt
 
 # from scipy.interpolate import interp1d as imported_interp1d
 from _TIAGO_FILES_.Tools import Tools as imported_tools
-from bluemira.power_cycle.base import PowerData as imported_class_1
-from bluemira.power_cycle.base import PowerLoad as imported_class_2
-
-# import numpy as np
-
+from bluemira.power_cycle.loads import PowerData as imported_class_1
+from bluemira.power_cycle.loads import PowerLoad as imported_class_2
 
 # Header
 imported_tools.print_header("Test PowerLoad")
@@ -44,8 +44,8 @@ instance_2.plot(c="b")
 plt.figure()
 plt.grid()
 instance_3 = instance_1 + instance_2
-instance_3.plot(detailed=True)
-
+plot_list = instance_3.plot(detailed=True)
+pprint(plot_list)
 # Show plots
 plt.show()
 

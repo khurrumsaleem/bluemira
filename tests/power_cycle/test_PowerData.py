@@ -4,7 +4,7 @@ from pprint import pprint
 import matplotlib.pyplot as plt
 
 from _TIAGO_FILES_.Tools import Tools as imported_tools
-from bluemira.power_cycle.base import PowerData as imported_class
+from bluemira.power_cycle.loads import PowerData as imported_class
 from bluemira.power_cycle.utilities import PowerCycleUtilities as imported_utilities
 
 # Header
@@ -30,7 +30,8 @@ pprint("No errors raised on validation!")
 # Test visualization method
 plt.figure()
 plt.grid()
-something = test_instance.plot()
+plot_list = test_instance.plot()
+pprint(plot_list)
 imported_utilities.adjust_2d_graph_ranges(x_frac=0.1, y_frac=0.1)
 
 # Show plots

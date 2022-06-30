@@ -76,6 +76,7 @@ class PowerCycleUtilities:
             )
         return ax
 
+    '''
     @staticmethod
     def apply_plot_options(plot_obj, **kwargs):
         """
@@ -119,6 +120,7 @@ class PowerCycleUtilities:
 
         # Return the list of ignored options
         return ignored
+    '''
 
     @classmethod
     def adjust_2d_graph_ranges(cls, x_frac=0.1, y_frac=0.1, ax=None):

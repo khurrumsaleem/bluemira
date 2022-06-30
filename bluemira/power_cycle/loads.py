@@ -168,6 +168,15 @@ class PowerData:
             the currently selected axes are used.
         **kwargs = `dict`
             Options for the `scatter` method.
+
+        Returns
+        -------
+        plot_list: `list`
+            List of plot objects created by the `matplotlib` package.
+            The first element of the list is the plot object created
+            using the `pyplot.scatter`, while the second element of the
+            list is the plot object created using the `pyplot.text`
+            method.
         """
 
         # Validate axes
@@ -184,16 +193,22 @@ class PowerData:
         time = self.time
         data = self.data
 
+        # Preallocate output
+        plot_list = []
+
         # Plot
-        plot_obj = ax.scatter(time, data, label=name, **kwargs)
-        # imported_utilities.apply_plot_options(plot_obj, **kwargs)
+        label = name + " (data)"
+        plot_obj = ax.scatter(time, data, label=label, **kwargs)
+        plot_list.append(plot_obj)
 
         # Add text to plot
-        plot_obj = ax.text(time[-1], data[-1], f"{name} (PowerData)")
-        # imported_utilities.apply_plot_options(ax, **kwargs)
+        text = f"{name} (PowerData)"
+        label = name + " (name)"
+        plot_obj = ax.text(time[-1], data[-1], text, label=label)
+        plot_list.append(plot_obj)
 
         # Return plot object
-        return plot_obj
+        return plot_list
 
 
 # ######################################################################
@@ -203,11 +218,12 @@ class PowerData:
 
 class PowerLoad:
     """
-    Generic representation of a power load curve.
+    Generic representation of a power load.
 
-    Defines a power load curve with a set of `PowerData` instances. Each
+    Defines a power load with a set of `PowerData` instances. Each
     instance must be accompanied by a `model` specification, used to
-    compute additional values between data points.
+    compute additional values between data points. This enables the
+    instance to compute time-dependent curves.
 
     Parameters
     ----------
@@ -564,6 +580,19 @@ class PowerLoad:
             curve. By default this input is set to `False`.
         **kwargs = `dict`
             Options for the `plot` method.
+
+        Returns
+        -------
+        plot_list: `list`
+            List of plot objects created by the `matplotlib` package.
+            The first element of the list is the plot object created
+            using the `pyplot.plot`, while the second element of the
+            list is the plot object created using the `pyplot.text`
+            method.
+            If the `detailed` argument is set to `True`, the list
+            continues to include the lists of plot objects created by
+            the `PowerData` class, with the addition of plotted curves
+            for the visualization of the model selected for each load.
         """
 
         # Validate axes
@@ -606,12 +635,22 @@ class PowerLoad:
         time = list(set(time))
         time.sort()
 
-        # Compute complete curve and plot as line
+        # Compute complete curve
         curve = self.curve(time)
-        plot_obj = ax.plot(time, curve, label=name, **kwargs)
 
-        # Add descriptive label to main curve
-        plot_obj = ax.text(time[1], curve[1], f"{name} (PowerLoad)")
+        # Preallocate output
+        plot_list = []
+
+        # Plot curve as line
+        label = name + " (curve)"
+        plot_obj = ax.plot(time, curve, label=label, **kwargs)
+        plot_list.append(plot_obj)
+
+        # Add descriptive label to curve
+        text = f"{name} (PowerLoad)"
+        label = name + " (name)"
+        plot_obj = ax.text(time[1], curve[1], text, label=label)
+        plot_list.append(plot_obj)
 
         # Validate `detailed` option
         if detailed:
@@ -636,13 +675,53 @@ class PowerLoad:
                     current_powerdata, current_model, time
                 )
 
+                # Plot PowerData with same plot options
+                current_plot_list = current_powerdata.plot(**kwargs)
+
                 # Plot current curve as line with descriptive label
                 plot_obj = ax.plot(time, current_curve, **kwargs)
-                # imported_utilities.apply_plot_options(plot_obj, **kwargs)
 
-                # Plot PowerData with same plot options
-                plot_obj = current_powerdata.plot(**kwargs)
-                # imported_utilities.apply_plot_options(plot_obj, **kwargs)
+                # Append current plot list with current curve
+                current_plot_list.append(plot_obj)
+
+                # Store current plot list in output
+                plot_list.append(current_plot_list)
 
             # Return plot object
-            return plot_obj
+            return plot_list
+
+
+# ######################################################################
+# PHASE LOAD
+# ######################################################################
+
+
+class PhaseLoad:
+    """
+    Representation of the total power load during a pulse phase.
+
+    Defines the phase load with a set of `PowerLoad` instances.
+
+    Parameters
+    ----------
+    name: 'str'
+        Description of the `PhaseLoad` instance.
+    phase: `str`
+        Pulse phase specification. Must be compliant with the phases
+        defined in `PowerCycleTimeline` class.
+    load: `PowerLoad` or `list`[`PowerLoad`]
+        Collection of instances of the `PowerData` class that define
+        the `PowerLoad` object.
+    """
+
+    pass
+
+
+# ######################################################################
+# PULSE LOAD
+# ######################################################################
+
+
+class PulseLoad:
+
+    pass
