@@ -4,8 +4,8 @@ from pprint import pprint
 import matplotlib.pyplot as plt
 
 from _TIAGO_FILES_.Tools import Tools as imported_tools
+from bluemira.power_cycle.base import PowerCycleUtilities as imported_utilities
 from bluemira.power_cycle.loads import PowerData as imported_class
-from bluemira.power_cycle.utilities import PowerCycleUtilities as imported_utilities
 
 # Header
 imported_tools.print_header("Test PowerData")
@@ -24,7 +24,8 @@ pprint(test_instance.time)
 pprint(test_instance.data)
 
 # Test validation method
-test_instance = imported_class._validate_PowerData(test_instance)
+test_instance = imported_class._validate(test_instance)
+"imported_class._validate(test_data)"
 pprint("No errors raised on validation!")
 
 # Test visualization method

@@ -25,8 +25,8 @@ load_2 = imported_class_1(name_2, time_2, data_2)
 model_2 = "step"
 
 # Create instances of PowerLoad
-instance_1 = imported_class_2(load_1, model_1, name="Test 1")
-instance_2 = imported_class_2(load_2, model_2, name="Test 2")
+instance_1 = imported_class_2("Test 1", load_1, model_1)
+instance_2 = imported_class_2("Test 2", load_2, model_2)
 
 # Test `_refine_vector` method
 refined_time_1 = imported_class_2._refine_vector(time_1, 3)

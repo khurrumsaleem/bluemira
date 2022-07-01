@@ -5,13 +5,116 @@ Full power cycle model object, used to visualize results.
 # import json
 # import os
 # import numpy as np
+from typing import Union  # , List
+
+from bluemira.power_cycle.base import PowerCycleABC as imported_abc
 
 # ######################################################################
-# TIMELINE
+# POWER CYCLE PHASE
 # ######################################################################
 
 
-class PowerCycleTimeline:
+class PowerCyclePhase(imported_abc):
+    """
+    Class to create a pulse phase for Power Cycle simulations.
+
+    Parameters
+    ----------
+    name: 'str'
+        Description of the `PowerCyclePhase` instance.
+    label: `str`
+        Shorthand label for addressing the `PowerCyclePhase` instance.
+    dependency: `str`
+        Classification of the `PowerCyclePhase` instance in terms of
+        time-dependent calculation: 'ss' (stready-state) or 'tt'
+        (transient).
+    duration: `float`
+        Phase duration
+    """
+
+    # ------------------------------------------------------------------
+    # CLASS ATTRIBUTES
+    # ------------------------------------------------------------------
+
+    _valid_dependencies = {
+        "ss": "steady-state",
+        "tt": "transient",
+    }
+
+    # ------------------------------------------------------------------
+    # CONSTRUCTOR
+    # ------------------------------------------------------------------
+    def __init__(self, name, label: str, dependency: str, duration: Union[int, float]):
+
+        # Call superclass constructor
+        super().__init__(name)
+
+        # Validate label
+        self.label = self._validate_label(label)
+
+        # Validate dependency
+        self.dependency = self._validate_dependency(dependency)
+
+    @classmethod
+    def _validate_label(cls, label):
+        """
+        Validate `label` input for class instance creation to be a
+        string of length 3.
+        """
+        if not len(label) == 3:
+            cls._issue_error("label")
+        return input
+
+    @classmethod
+    def _validate_dependency(cls, dependency):
+        """
+        Validate `dependency` input for class instance creation to be
+        one of the valid values.
+        """
+        valid_dependencies = cls._valid_dependencies.keys()
+        if dependency not in valid_dependencies:
+            cls._issue_error("dependency")
+        return input
+
+    @classmethod
+    def _issue_error(cls, type):
+
+        # Class name
+        class_name = cls.__class__.__name__
+
+        # Validate error `type`
+        if type == "label":
+            raise ValueError(
+                f"""
+                The argument given for the attribute `label` is not a
+                valid value. Labels of instances of the {class_name}
+                class must be strings of 3 characters.
+                """
+            )
+        elif type == "dependency":
+            msg_deps = cls._valid_dependencies.keys()
+            msg_deps = super()._join_valid_values(msg_deps)
+            raise ValueError(
+                f"""
+                    The argument given for `dependency` is not a valid
+                    value. Only the following values are accepted:
+                    {msg_deps}.
+                    """
+            )
+        else:
+            super()._issue_unknown_error(cls)
+
+    # ------------------------------------------------------------------
+    # OPERATIONS
+    # ------------------------------------------------------------------
+
+
+# ######################################################################
+# POWER CYCLE TIMELINE
+# ######################################################################
+
+
+class PowerCycleTimeline(imported_abc):
     """
     Class to create a pulse timeline for Power Cycle simulations.
 
@@ -20,13 +123,39 @@ class PowerCycleTimeline:
     name: 'str'
         Description of the `PhaseLoad` instance.
     durations: `dict`
-        Duration of each
-    load: `PowerLoad` or `list`[`PowerLoad`]
-        Collection of instances of the `PowerData` class that define
-        the `PowerLoad` object.
+        Duration of each pulse phase for a particular timeline instance.
+        The `dict` keys must comply with the phases defined in the
+        `PowerCyclePhase` class.
     """
 
-    pass
+    # ------------------------------------------------------------------
+    # CLASS ATTRIBUTES
+    # ------------------------------------------------------------------
+
+    _valid_phases = []
+
+    # ------------------------------------------------------------------
+    # CONSTRUCTOR
+    # ------------------------------------------------------------------
+    def __init__(self, name, durations=None):
+
+        # Call superclass constructor
+        super().__init__(name)
+
+        # Validate durations
+        self.durations = self._validate_durations(durations)
+
+    @classmethod
+    def _validate_durations(cls, durations):
+        """
+        Validate `durations` input to be a dictionary compliant with
+        the standard pulse phases defined in the class.
+        """
+        pass
+
+    # ------------------------------------------------------------------
+    # OPERATIONS
+    # ------------------------------------------------------------------
 
 
 '''

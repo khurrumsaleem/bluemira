@@ -1,20 +1,22 @@
 """
-Base classes for the power cycle model.
+Classes to create loads in the power cycle model.
 """
+from typing import List, Union
+
 # Import
 import numpy as np
-
-# import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d as imported_interp1d
 
-from bluemira.power_cycle.utilities import PowerCycleUtilities as imported_utilities
+from bluemira.power_cycle.base import PowerCycleABC as imported_abc
+from bluemira.power_cycle.base import PowerCycleError as imported_error
+from bluemira.power_cycle.base import PowerCycleUtilities as imported_utilities
 
 # ######################################################################
 # POWER DATA
 # ######################################################################
 
 
-class PowerData:
+class PowerData(imported_abc):
     """
     Data class to store a set of time and load vectors.
 
@@ -51,17 +53,42 @@ class PowerData:
     _text_angle = 45  # rotation angle
     _ind_point = 0  # index of (time,data) point used for location
 
+    # Error messages
+    _errors = {
+        "increasing": imported_error(
+            "Value",
+            """
+                           The `time` input used to create an instance
+                           of the CLASS_NAME class must be an increasing
+                           list.
+                           """,
+        ),
+        "sanity": imported_error(
+            "Value",
+            """
+                                 The attributes `data` and `time` of an
+                                 instance of the CLASS_NAME class must
+                                 have the same length.
+                                 """,
+        ),
+    }
+
     # ------------------------------------------------------------------
     # CONSTRUCTOR
     # ------------------------------------------------------------------
-    def __init__(self, name, time, data):
+    def __init__(
+        self,
+        name,
+        time: Union[Union[int, float], List[Union[int, float]]],
+        data: Union[Union[int, float], List[Union[int, float]]],
+    ):
 
-        # Validate name
-        self.name = self._validate_name(name)
+        # Call superclass constructor
+        super().__init__(name)
 
-        # Validate inputs
-        self.data = self._validate_input(data)
-        self.time = self._validate_input(time)
+        # Validate inputs to be lists
+        self.data = super()._validate_list(data)
+        self.time = super()._validate_list(time)
 
         # Verify time is an increasing vector
         self._is_increasing(self.time)
@@ -69,20 +96,7 @@ class PowerData:
         # Validate created instance
         self._sanity()
 
-    @classmethod
-    def _validate_name(cls, name):
-        """
-        Validate a name for class instance creation to be a string.
-        """
-        if not isinstance(name, (str)):
-            raise TypeError(
-                f"""
-                The 'name' used to create an instance of the
-                {cls.__class__.__name__} class must be a `str`.
-                """
-            )
-        return name
-
+    '''
     @classmethod
     def _validate_input(cls, input):
         """
@@ -99,6 +113,7 @@ class PowerData:
                     """
                 )
         return input
+    '''
 
     @classmethod
     def _is_increasing(cls, input):
@@ -111,13 +126,7 @@ class PowerData:
             check_increasing.append(input[i] <= input[i + 1])
 
         if not all(check_increasing):
-            raise ValueError(
-                f"""
-                The `time` input used to create an instance of the
-                {cls.__class__.__name__} class must be an increasing
-                list.
-                """
-            )
+            cls._issue_error("increasing")
         return input
 
     def _sanity(self):
@@ -128,34 +137,22 @@ class PowerData:
         length_data = len(self.data)
         length_time = len(self.time)
         if length_data != length_time:
-            raise ValueError(
-                f"""
-                The attributes `data` and `time` of an instance of the
-                {self.__class__.__name__} class must have the same
-                length.
-                """
-            )
+            self._issue_error("sanity")
 
     # ------------------------------------------------------------------
     # OPERATIONS
     # ------------------------------------------------------------------
-    @classmethod
-    def _validate_PowerData(cls, object):
-        """
-        Validate `object` to be an instance of the this class.
-        """
-        if not isinstance(object, PowerData):
-            raise TypeError(
-                f"""
-                The tested object is not an instance of the
-                {cls.__class__.__name__} class.
-                """
-            )
-        return object
 
+    """
+    @classmethod
+    def _validate(cls, object):
+        object = super()._validate(cls, object)
+        return object
+    """
     # ------------------------------------------------------------------
     # VISUALIZATION
     # ------------------------------------------------------------------
+
     def plot(self, ax=None, **kwargs):
         """
         Plot the points that define the `PowerData` instance.
@@ -222,7 +219,7 @@ class PowerData:
 # ######################################################################
 
 
-class PowerLoad:
+class PowerLoad(imported_abc):
     """
     Generic representation of a power load.
 
@@ -271,15 +268,15 @@ class PowerLoad:
     _ind_point = -1  # index of (time,data) point used for location
 
     # Implemented models (add model name here after implementation)
-    valid_models = ["ramp", "step"]
+    _valid_models = ["ramp", "step"]
 
     # ------------------------------------------------------------------
     # CONSTRUCTOR
     # ------------------------------------------------------------------
-    def __init__(self, load, model, name=None):
+    def __init__(self, name, load, model):
 
-        # Validate name
-        self.name = self._validate_name(name)
+        # Call superclass constructor
+        super().__init__(name)
 
         # Validate inputs
         self.load = self._validate_load(load)
@@ -289,34 +286,13 @@ class PowerLoad:
         self._sanity()
 
     @classmethod
-    def _validate_name(cls, name):
-        """
-        Validate 'name' input.
-        """
-        if not name:
-            name = cls.name_default
-        elif not isinstance(name, (str)):
-            cls._issue_error("name")
-        return name
-
-    @classmethod
-    def _validate_input(cls, input):
-        """
-        Validate input to be a list. If just a single value, insert it
-        in a list.
-        """
-        if not isinstance(input, (list)):
-            input = [input]
-        return input
-
-    @classmethod
     def _validate_load(cls, load):
         """
         Validate 'load' input to be a list of `PowerData` instances.
         """
-        load = cls._validate_input(load)
+        load = super()._validate_list(load)
         for element in load:
-            PowerData._validate_PowerData(element)
+            PowerData._validate(element)
         return load
 
     @classmethod
@@ -324,9 +300,9 @@ class PowerLoad:
         """
         Validate 'model' input to be a list of valid models options.
         """
-        model = cls._validate_input(model)
+        model = super()._validate_list(model)
         for element in model:
-            if element not in cls.valid_models:
+            if element not in cls._valid_models:
                 cls._issue_error("model")
         return model
 
@@ -351,16 +327,8 @@ class PowerLoad:
         class_name = cls.__class__.__name__
 
         # Validate error `type`
-        if type == "name":
-            raise TypeError(
-                f"""
-                The argument given for the attribute `name` is not a
-                valid value for an instance of the class {class_name}.
-                Only strings are allowed.
-                """
-            )
-        elif type == "model":
-            msg_models = ", ".join(cls.valid_models)
+        if type == "model":
+            msg_models = imported_utilities._join_valid_values(cls.valid_models)
             raise ValueError(
                 f"""
                 The argument given for the attribute `model` is not a
@@ -371,10 +339,10 @@ class PowerLoad:
         elif type == "n_points":
             raise ValueError(
                 f"""
-                    The argument given for `n_points` is not a valid
-                    value for plotting an instance of the {class_name}
-                    class. Only non-negative integers are accepted.
-                    """
+                The argument given for `n_points` is not a valid
+                value for plotting an instance of the {class_name}
+                class. Only non-negative integers are accepted.
+                """
             )
         else:
             raise ValueError(
@@ -386,6 +354,12 @@ class PowerLoad:
     # ------------------------------------------------------------------
     # OPERATIONS
     # ------------------------------------------------------------------
+    """
+    @classmethod
+    def _validate(cls, object):
+        object = super()._validate(cls, object)
+        return object
+    """
 
     def __add__(self, other):
         """
@@ -405,7 +379,7 @@ class PowerLoad:
         another_load = this_load + other_load
         another_model = this_model + other_model
         another_name = "Resulting PowerLoad"
-        another = PowerLoad(another_load, another_model, another_name)
+        another = PowerLoad(another_name, another_load, another_model)
         return another
 
     @classmethod
@@ -413,7 +387,7 @@ class PowerLoad:
         """
         Validate 'time' input to be a list of numeric values.
         """
-        time = cls._validate_input(time)
+        time = super()._validate_list(time)
         for element in time:
             if not isinstance(element, (int, float)):
                 raise TypeError(
@@ -708,7 +682,7 @@ class PowerLoad:
 # ######################################################################
 
 
-class PhaseLoad:
+class PhaseLoad(imported_abc):
     """
     Representation of the total power load during a pulse phase.
 
@@ -721,19 +695,62 @@ class PhaseLoad:
     phase: `str`
         Pulse phase specification. Must be compliant with the phases
         defined in `PowerCycleTimeline` class.
-    load: `PowerLoad` or `list`[`PowerLoad`]
-        Collection of instances of the `PowerData` class that define
-        the `PowerLoad` object.
+    load_set: `PowerLoad` or `list`[`PowerLoad`]
+        Collection of instances of the `PowerLoad` class that define
+        the `PhaseLoad` object.
     """
 
-    pass
+    # ------------------------------------------------------------------
+    # CLASS ATTRIBUTES
+    # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # CONSTRUCTOR
+    # ------------------------------------------------------------------
+    def __init__(self, name, phase, load_set):
+
+        # Call superclass constructor
+        super().__init__(name)
+
+        # Validate `phase`
+        self.phase = self._validate_phase(phase)
+
+        # Validate `load_set`
+        self.load_set = self._validate_load_set(load_set)
+
+        # Validate created instance
+        self._sanity()
+
+    @classmethod
+    def _validate_phase(cls, phase):
+        """
+        Validate 'phase' input to be a valid PowerCycleTimeline phase.
+        """
+
+        return phase
+
+    @classmethod
+    def _validate_load_set(cls, load_set):
+        """
+        Validate 'load_set' input to be a list of `PowerLoad` instances.
+        """
+        load_set = super()._validate_list(load_set)
+        for element in load_set:
+            PowerLoad._validate(element)
+        return load_set
+
+    # ------------------------------------------------------------------
+    # OPERATIONS
+    # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # VISUALIZATION
+    # ------------------------------------------------------------------
 
 
 # ######################################################################
 # PULSE LOAD
 # ######################################################################
-
-
 class PulseLoad:
 
     pass
