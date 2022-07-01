@@ -71,8 +71,32 @@ class PowerCycleABC(abc.ABC):
             # Retrieve particular error
             the_error = error_dict[label]
 
-            # Add class name to error message
-            the_error._add_class_name(class_name)
+            # Find substitution keywords in error message
+            keywords = the_error.search_keywords
+
+            # Substitute keywords if they are class attributes
+            for keyword in keywords:
+
+                # Search for class attribute
+                attribute = keyword.replace("%", "")
+
+                # Update error message depending on case
+                if attribute == "class_name":
+
+                    # Retrieve class name
+                    value = class_name
+
+                elif hasattr(cls, attribute):
+
+                    # Retrieve class attribute value
+                    value = cls.attribute
+
+                    # Join values, if attribute is a list
+                    if isinstance(value, list):
+                        value = PowerCycleUtilities._join_valid_values(value)
+
+                # Update error message
+                the_error._update_msg(keyword, value)
 
             # Retrieve error attributes
             error_type = the_error.err_type
@@ -205,14 +229,38 @@ class PowerCycleError(abc.ABC):
     # OPERATIONS
     # ------------------------------------------------------------------
 
-    def add_class_name(self, class_name: str):
+    def _search_keywords(self):
         """
-        Substitute the string "CLASS_NAME" in the `err_msg` attribute by
-        a string provided externally.
+        Find strings preceeded by percent symbols ("%") in the error
+        message.
         """
 
-        # Substitute
-        self.err_msg.replace("CLASS_NAME", class_name)
+        # Current error message
+        err_msg = self.err_msg
+
+        # Split message in whitespaces
+        words = err_msg.split
+
+        # Preallocate output
+        keywords = []
+
+        # For each word
+        for word in words:
+
+            # If "%" is present, make lowercase and store
+            if "%" in word:
+                word.lower()
+                keywords.append(word)
+
+        # Output keywords
+        return keywords
+
+    def update_msg(self, keyword: str, new_text: str):
+        """
+        Update the `err_msg` attribute of an instance with a string
+        provided.
+        """
+        self.err_msg.replace(keyword, new_text)
 
 
 # ######################################################################

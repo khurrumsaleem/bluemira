@@ -58,18 +58,16 @@ class PowerData(imported_abc):
         "increasing": imported_error(
             "Value",
             """
-                           The `time` input used to create an instance
-                           of the CLASS_NAME class must be an increasing
-                           list.
-                           """,
+                The `time` input used to create an instance of the
+                %CLASS_NAME class must be an increasing list.
+                """,
         ),
         "sanity": imported_error(
             "Value",
             """
-                                 The attributes `data` and `time` of an
-                                 instance of the CLASS_NAME class must
-                                 have the same length.
-                                 """,
+                The attributes `data` and `time` of an instance of the
+                %CLASS_NAME class must have the same length.
+                """,
         ),
     }
 
@@ -270,6 +268,34 @@ class PowerLoad(imported_abc):
     # Implemented models (add model name here after implementation)
     _valid_models = ["ramp", "step"]
 
+    # Error messages
+    _errors = {
+        "model": imported_error(
+            "Value",
+            """
+                The argument given for the attribute `model` is not a
+                valid value. Only the following models are currently
+                implemented in class %CLASS_NAME: %_VALID_MODELS.
+                """,
+        ),
+        "n_points": imported_error(
+            "Value",
+            """
+                The argument given for `n_points` is not a valid value
+                for plotting an instance of the %CLASS_NAME class. Only
+                non-negative integers are accepted.
+                """,
+        ),
+        "sanity": imported_error(
+            "Value",
+            """
+                The attributes `load` and `model` of an instance of the
+                %CLASS_NAME class must have the same
+                length.
+                """,
+        ),
+    }
+
     # ------------------------------------------------------------------
     # CONSTRUCTOR
     # ------------------------------------------------------------------
@@ -312,44 +338,7 @@ class PowerLoad(imported_abc):
         same length.
         """
         if not len(self.load) == len(self.model):
-            raise ValueError(
-                f"""
-                The attributes `load` and `model` of an instance of the
-                {self.__class__.__name__} class must have the same
-                length.
-                """
-            )
-
-    @classmethod
-    def _issue_error(cls, type):
-
-        # Class name
-        class_name = cls.__class__.__name__
-
-        # Validate error `type`
-        if type == "model":
-            msg_models = imported_utilities._join_valid_values(cls.valid_models)
-            raise ValueError(
-                f"""
-                The argument given for the attribute `model` is not a
-                valid value. Only the following models are currently
-                implemented in class {class_name}: {msg_models}.
-                """
-            )
-        elif type == "n_points":
-            raise ValueError(
-                f"""
-                The argument given for `n_points` is not a valid
-                value for plotting an instance of the {class_name}
-                class. Only non-negative integers are accepted.
-                """
-            )
-        else:
-            raise ValueError(
-                f"""
-                Unknown error type for method of class {class_name}.
-                """
-            )
+            self._issue_error("sanity")
 
     # ------------------------------------------------------------------
     # OPERATIONS
@@ -703,6 +692,9 @@ class PhaseLoad(imported_abc):
     # ------------------------------------------------------------------
     # CLASS ATTRIBUTES
     # ------------------------------------------------------------------
+
+    # Error messages
+    _errors = {}
 
     # ------------------------------------------------------------------
     # CONSTRUCTOR
