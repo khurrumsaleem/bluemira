@@ -24,7 +24,7 @@ Base ``DesignStage`` class for reactor builds.
 
 import abc
 import enum
-from typing import Type
+from typing import Dict, Type
 
 from bluemira.base.components import Component, PhysicalComponent
 from bluemira.base.parameter import ParameterFrame
@@ -117,10 +117,11 @@ class DesignStage(SolverABC):
     run_cls = None
     teardown_cls = None
 
-    def __init__(self, params: ParameterFrame):
+    def __init__(self, params: ParameterFrame, build_config: Dict):
         self.run_cls = self.designer
         self.teardown_cls = self.builder
         super().__init__(params)
+        self.build_config = build_config
 
 
 if __name__ == "__main__":
@@ -185,7 +186,7 @@ if __name__ == "__main__":
         designer = PlasmaDesigner
         builder = PlasmaBuilder
 
-    plasma_stage = PlasmaDesignStage(params)
+    plasma_stage = PlasmaDesignStage(params, build_config={})
     plasma = plasma_stage.execute(DesignRunMode.RUN)
 
     plot_2d(plasma.get_component("xz").get_component("LCFS").shape)
