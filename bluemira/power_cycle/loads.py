@@ -213,7 +213,7 @@ class PowerLoad(PowerCycleABC):
     ----------
     name: 'str'
         Description of the `PowerLoad` instance.
-    load: `PowerData` | `list`[`PowerData`]
+    data_set: `PowerData` | `list`[`PowerData`]
         Collection of instances of the `PowerData` class that define
         the `PowerLoad` object.
     model: `str` | `list[`str`]
@@ -294,27 +294,27 @@ class PowerLoad(PowerCycleABC):
     # ------------------------------------------------------------------
     # CONSTRUCTOR
     # ------------------------------------------------------------------
-    def __init__(self, name, load, model):
+    def __init__(self, name, data_set, model):
 
         # Call superclass constructor
         super().__init__(name)
 
         # Validate inputs
-        self.load = self._validate_load(load)
+        self.data_set = self._validate_data_set(data_set)
         self.model = self._validate_model(model)
 
         # Validate created instance
         self._sanity()
 
     @classmethod
-    def _validate_load(cls, load):
+    def _validate_data_set(cls, data_set):
         """
-        Validate 'load' input to be a list of `PowerData` instances.
+        Validate 'data_set' input to be a list of `PowerData` instances.
         """
-        load = super()._validate_list(load)
-        for element in load:
+        data_set = super()._validate_list(data_set)
+        for element in data_set:
             PowerData._validate(element)
-        return load
+        return data_set
 
     @classmethod
     def _validate_model(cls, model):
@@ -329,10 +329,10 @@ class PowerLoad(PowerCycleABC):
 
     def _sanity(self):
         """
-        Validate instance to have `load` and `model` attributes of
+        Validate instance to have `data_set` and `model` attributes of
         same length.
         """
-        if not len(self.load) == len(self.model):
+        if not len(self.data_set) == len(self.model):
             self._issue_error("sanity")
 
     # ------------------------------------------------------------------
@@ -346,18 +346,18 @@ class PowerLoad(PowerCycleABC):
         """
 
         # Retrieve `load` attributes
-        this_load = self.load
-        other_load = other.load
+        this_set = self.data_set
+        other_set = other.data_set
 
         # Retrieve `model` attributes
         this_model = self.model
         other_model = other.model
 
         # Create and output `another`
-        another_load = this_load + other_load
+        another_set = this_set + other_set
         another_model = this_model + other_model
         another_name = "Resulting PowerLoad"
-        another = PowerLoad(another_name, another_load, another_model)
+        another = PowerLoad(another_name, another_set, another_model)
         return another
 
     @classmethod
@@ -406,10 +406,10 @@ class PowerLoad(PowerCycleABC):
         times.
 
         This method applies the `scipy.interpolate.interp1d` imported
-        method to each `PowerData` object stored in the `data` attribute
-        and sums the results. The kind of interpolation is determined by
-        each respective value in the `model` attribute. Any out-of-bound
-        values are set to zero.
+        method to each `PowerData` object stored in the `data_set`
+        attribute and sums the results. The kind of interpolation is
+        determined by each respective value in the `model` attribute.
+        Any out-of-bound values are set to zero.
 
         Parameters
         ----------
@@ -427,11 +427,11 @@ class PowerLoad(PowerCycleABC):
         n_time = len(time)
 
         # Retrieve instance attributes
-        load = self.load
+        data_set = self.data_set
         model = self.model
 
-        # Number of elements in `load`
-        n_elements = len(load)
+        # Number of elements in `data_set`
+        n_elements = len(data_set)
 
         # Preallocate curve (with length of `time` input)
         curve = np.array([0] * n_time)
@@ -440,7 +440,7 @@ class PowerLoad(PowerCycleABC):
         for e in range(n_elements):
 
             # Current PowerData
-            current_powerdata = load[e]
+            current_powerdata = data_set[e]
 
             # Current model
             current_model = model[e]
@@ -517,7 +517,7 @@ class PowerLoad(PowerCycleABC):
         attributes, but can be overridden.
 
         This method can also plot the individual `PowerData` objects
-        stored in the `load` attribute that define the `PowerLoad`
+        stored in the `data_set` attribute that define the `PowerLoad`
         instance.
 
         Parameters
@@ -563,11 +563,11 @@ class PowerLoad(PowerCycleABC):
 
         # Retrieve instance attributes
         name = self.name
-        load = self.load
+        data_set = self.data_set
         model = self.model
 
         # Number of elements in `load`
-        n_elements = len(load)
+        n_elements = len(data_set)
 
         # Preallocate time vector for plotting
         time = []
@@ -576,7 +576,7 @@ class PowerLoad(PowerCycleABC):
         for e in range(n_elements):
 
             # Current PowerData time vector
-            current_powerdata = load[e]
+            current_powerdata = data_set[e]
             current_time = current_powerdata.time
 
             # Refine current time vector
@@ -605,7 +605,13 @@ class PowerLoad(PowerCycleABC):
         text = f"{name} (PowerLoad)"
         label = name + " (name)"
         angle = self._text_angle
-        plot_obj = ax.text(time[index], curve[index], text, label=label, rotation=angle)
+        plot_obj = ax.text(
+            time[index],
+            curve[index],
+            text,
+            label=label,
+            rotation=angle,
+        )
         plot_list.append(plot_obj)
 
         # Validate `detailed` option
@@ -621,7 +627,7 @@ class PowerLoad(PowerCycleABC):
             for e in range(n_elements):
 
                 # Current PowerData
-                current_powerdata = load[e]
+                current_powerdata = data_set[e]
 
                 # Current model
                 current_model = model[e]
@@ -668,6 +674,12 @@ class PhaseLoad(PowerCycleABC):
     load_set: `PowerLoad` | `list`[`PowerLoad`]
         Collection of instances of the `PowerLoad` class that define
         the `PhaseLoad` object.
+    normalize: `bool` | `list`[`bool`]
+        List of boolean values that defines which elements of `load_set`
+        have their time-dependence normalized in respect to the phase
+        duration. A value of `True` forces a normalization, while a
+        value of `False` does not and time values beyond the phase
+        duration are ignored.
     """
 
     # ------------------------------------------------------------------
@@ -677,14 +689,40 @@ class PhaseLoad(PowerCycleABC):
     # Error messages
     @classproperty
     def _errors(cls):
-        # class_name = cls.__class__.__name__
-        e = {}
+        class_name = cls.__name__
+        e = {
+            "normalize": PowerCycleError(
+                "Value",
+                f"""
+                    The argument given for `normalize` is not a valid
+                    value for an instance of the {class_name} class.
+                    Each element of `normalize` must be a boolean.
+                    """,
+            ),
+            "sanity": PowerCycleError(
+                "Value",
+                f"""
+                    The attributes `load_set` and `normalize` of an
+                    instance of the {class_name} class must have the
+                    same length.
+                    """,
+            ),
+            "display_data": PowerCycleError(
+                "Value",
+                f"""
+                    The argument passed to the `display_data` method of
+                    the {class_name} class for the input `option` is not
+                    valid. Only the strings 'load' and 'normal' are
+                    accepted.
+                    """,
+            ),
+        }
         return e
 
     # ------------------------------------------------------------------
     # CONSTRUCTOR
     # ------------------------------------------------------------------
-    def __init__(self, name, phase, load_set):
+    def __init__(self, name, phase, load_set, normalize):
 
         # Call superclass constructor
         super().__init__(name)
@@ -694,6 +732,9 @@ class PhaseLoad(PowerCycleABC):
 
         # Validate `load_set`
         self.load_set = self._validate_load_set(load_set)
+
+        # Validate `normalize`
+        self.normalize = self._validate_normalize(normalize)
 
         # Validate created instance
         self._sanity()
@@ -716,9 +757,105 @@ class PhaseLoad(PowerCycleABC):
             PowerLoad._validate(element)
         return load_set
 
+    @classmethod
+    def _validate_normalize(cls, normalize):
+        """
+        Validate 'normalize' input to be a list of boolean values.
+        """
+        normalize = super()._validate_list(normalize)
+        for element in normalize:
+            if not isinstance(element, (bool)):
+                cls._issue_error("normalize")
+        return normalize
+
+    def _sanity(self):
+        """
+        Validate instance to have `load_set` and `normalize` attributes
+        of same length.
+        """
+        if not len(self.load_set) == len(self.normalize):
+            self._issue_error("sanity")
+
     # ------------------------------------------------------------------
     # OPERATIONS
     # ------------------------------------------------------------------
+
+    @property
+    def _normal_set(self):
+        """
+        Create a modified version of the `load_set` attribute, in which
+        the time vectors of each load is normalized in respect to the
+        duration of the phase instance stored in the `phase` attribute.
+        """
+
+        # Retrieve instance attributes
+        phase = self.phase
+        load_set = self.load_set
+        normalize = self.normalize
+
+        # Phase duration
+        duration = phase.duration
+
+        # Number of loads
+        n_loads = len(load_set)
+
+        # Preallocate output
+        normal_set = []
+
+        # For each load index
+        for l_ind in range(n_loads):
+
+            # Current load & normalization flag
+            load = load_set[l_ind]
+            flag = normalize[l_ind]
+
+            # If normalization flag is True
+            if flag:
+
+                # Data set of current load
+                data_set = load.data_set
+
+                # Number of data instances in data set
+                n_data = len(data_set)
+
+                # For each data index
+                for d_ind in range(n_data):
+
+                    # Current data instance
+                    data = data_set[d_ind]
+
+                    # Current time vector
+                    time = data.time
+
+                    # Normalize time in respect to duration
+                    time = [t * duration / max(time) for t in time]
+
+                    # Store new time in current load
+                    load.data_set[d_ind].time = time
+
+            # Store current load in output
+            normal_set.insert(l_ind, load)
+
+        # Output new list
+        return normal_set
+
+    def _cut_time(self, time):
+        """
+        Cut a list of time values based on the duration of the phase
+        stored in the `phase` attribute.
+        """
+
+        # Retrieve instance attributes
+        phase = self.phase
+
+        # Retrieve phase duration
+        duration = phase.duration
+
+        # Cut values above duration
+        cut_time = [t for t in time if t <= duration]
+
+        # Output new list
+        return cut_time
 
     def curve(self, time):
         """
@@ -728,6 +865,14 @@ class PhaseLoad(PowerCycleABC):
         This method applies the `curve` method from the `PowerLoad`
         class to each load stored in the `load_set` attribute and sums
         the results.
+
+        For each element of `load_set`, its respective element in the
+        `normalize` attribute is also read. When `True`, the curve is
+        duration in time in normalized in respect to the the duration of
+        the phase stored in the `phase` attribute. When `False`, no
+        normalization is performed and the curve contribution is added
+        as computed by the `PowerLoad` instance; the curve is cut at the
+        time equal to the phase duration.
 
         Parameters
         ----------
@@ -740,14 +885,70 @@ class PhaseLoad(PowerCycleABC):
             List of power values. [W]
         """
 
+        # Retrieve instance attributes
+        normal_set = self._normal_set
+
+        # Cut time up to phase duration
+        time = self._cut_time(time)
+        n_time = len(time)
+
+        # Preallocate curve
+        curve = np.array([0] * n_time)
+
+        # For each load
+        for load in normal_set:
+
+            # Compute current curve
+            current_curve = load.curve(time)
+
+            # Add current curve to total curve
+            current_curve = np.array(current_curve)
+            curve = curve + current_curve
+
+        # Output curve converted into list
+        curve = curve.tolist()
+        return curve
+
     # ------------------------------------------------------------------
     # VISUALIZATION
     # ------------------------------------------------------------------
+
+    def display_data(self, option="load"):
+        """
+        Displays all data that make up the loads in the instance of
+        `PhaseLoad`. Mostly used for comparing and verifying the results
+        of time normalization. Two options are available:
+            - 'load', the contents in `load_set` are listed.
+            - 'normal', the contents in `_normal_set` are listed.
+        """
+
+        # Validate option
+        if option == "load":
+            base_set = self.load_set
+        elif option == "normal":
+            base_set = self._normal_set
+        else:
+            self._issue_error("display_data")
+
+        # Preallocate output
+        all_data = []
+
+        # For each load
+        for load in base_set:
+
+            # For each data
+            for element in load.data_set:
+
+                all_data.append([element.time, element.data])
+
+        return all_data
 
 
 # ######################################################################
 # PULSE LOAD
 # ######################################################################
+
+
 class PulseLoad(PowerCycleABC):
     """
     Representation of the total power load during a complete pulse.
