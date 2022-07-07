@@ -7,16 +7,20 @@ from typing import List, Union
 import numpy as np
 from scipy.interpolate import interp1d as imported_interp1d
 
-from bluemira.power_cycle.base import PowerCycleABC as imported_abc
-from bluemira.power_cycle.base import PowerCycleError as imported_error
-from bluemira.power_cycle.base import PowerCycleUtilities as imported_utilities
+from bluemira.power_cycle.base import (
+    PowerCycleABC,
+    PowerCycleError,
+    PowerCycleUtilities,
+    classproperty,
+)
+from bluemira.power_cycle.timeline import PowerCyclePhase
 
 # ######################################################################
 # POWER DATA
 # ######################################################################
 
 
-class PowerData(imported_abc):
+class PowerData(PowerCycleABC):
     """
     Data class to store a set of time and load vectors.
 
@@ -54,22 +58,26 @@ class PowerData(imported_abc):
     _ind_point = 0  # index of (time,data) point used for location
 
     # Error messages
-    _errors = {
-        "increasing": imported_error(
-            "Value",
-            """
+    @classproperty
+    def _errors(cls):
+        class_name = cls.__name__
+        e = {
+            "increasing": PowerCycleError(
+                "Value",
+                f"""
                 The `time` input used to create an instance of the
-                %CLASS_NAME class must be an increasing list.
+                {class_name} class must be an increasing list.
                 """,
-        ),
-        "sanity": imported_error(
-            "Value",
-            """
+            ),
+            "sanity": PowerCycleError(
+                "Value",
+                f"""
                 The attributes `data` and `time` of an instance of the
-                %CLASS_NAME class must have the same length.
+                {class_name} class must have the same length.
                 """,
-        ),
-    }
+            ),
+        }
+        return e
 
     # ------------------------------------------------------------------
     # CONSTRUCTOR
@@ -154,13 +162,13 @@ class PowerData(imported_abc):
         """
 
         # Validate axes
-        ax = imported_utilities.validate_axes(ax)
+        ax = PowerCycleUtilities.validate_axes(ax)
 
         # Retrieve default plot options
         default = self._plot_defaults
 
         # Set each default options in kwargs, if not specified
-        kwargs = imported_utilities.add_dict_entries(kwargs, default)
+        kwargs = PowerCycleUtilities.add_dict_entries(kwargs, default)
 
         # Retrieve instance characteristics
         name = self.name
@@ -192,7 +200,7 @@ class PowerData(imported_abc):
 # ######################################################################
 
 
-class PowerLoad(imported_abc):
+class PowerLoad(PowerCycleABC):
     """
     Generic representation of a power load.
 
@@ -244,39 +252,44 @@ class PowerLoad(imported_abc):
     _valid_models = ["ramp", "step"]
 
     # Error messages
-    _errors = {
-        "model": imported_error(
-            "Value",
-            """
+    @classproperty
+    def _errors(cls):
+        class_name = cls.__name__
+        models = PowerCycleUtilities._join_valid_values(cls._valid_models)
+        e = {
+            "model": PowerCycleError(
+                "Value",
+                f"""
                 The argument given for the attribute `model` is not a
                 valid value. Only the following models are currently
-                implemented in class %CLASS_NAME: %_VALID_MODELS.
+                implemented in class {class_name}: {models}.
                 """,
-        ),
-        "n_points": imported_error(
-            "Value",
-            """
-                The argument given for `n_points` is not a valid value
-                for plotting an instance of the %CLASS_NAME class. Only
-                non-negative integers are accepted.
-                """,
-        ),
-        "sanity": imported_error(
-            "Value",
-            """
-                The attributes `load` and `model` of an instance of the
-                %CLASS_NAME class must have the same length.
-                """,
-        ),
-        "time": imported_error(
-            "Type",
-            """
-                The `time` input used to create a curve with an instance
-                of the %CLASS_NAME class must be numeric or a list of
-                numeric values.
-                """,
-        ),
-    }
+            ),
+            "n_points": PowerCycleError(
+                "Value",
+                f"""
+                    The argument given for `n_points` is not a valid
+                    value for plotting an instance of the {class_name}
+                    class. Only non-negative integers are accepted.
+                    """,
+            ),
+            "sanity": PowerCycleError(
+                "Value",
+                f"""
+                    The attributes `load` and `model` of an instance of
+                    the {class_name} class must have the same length.
+                    """,
+            ),
+            "time": PowerCycleError(
+                "Type",
+                f"""
+                    The `time` input used to create a curve with an
+                    instance of the {class_name} class must be numeric
+                    or a list of numeric values.
+                    """,
+            ),
+        }
+        return e
 
     # ------------------------------------------------------------------
     # CONSTRUCTOR
@@ -537,13 +550,13 @@ class PowerLoad(imported_abc):
         """
 
         # Validate axes
-        ax = imported_utilities.validate_axes(ax)
+        ax = PowerCycleUtilities.validate_axes(ax)
 
         # Retrieve default plot options (main curve)
         default = self._plot_defaults
 
         # Set each default options in kwargs, if not specified
-        kwargs = imported_utilities.add_dict_entries(kwargs, default)
+        kwargs = PowerCycleUtilities.add_dict_entries(kwargs, default)
 
         # Validate `n_points`
         n_points = self._validate_n_points(n_points)
@@ -639,7 +652,7 @@ class PowerLoad(imported_abc):
 # ######################################################################
 
 
-class PhaseLoad(imported_abc):
+class PhaseLoad(PowerCycleABC):
     """
     Representation of the total power load during a pulse phase.
 
@@ -662,7 +675,11 @@ class PhaseLoad(imported_abc):
     # ------------------------------------------------------------------
 
     # Error messages
-    _errors = {}
+    @classproperty
+    def _errors(cls):
+        # class_name = cls.__class__.__name__
+        e = {}
+        return e
 
     # ------------------------------------------------------------------
     # CONSTRUCTOR
@@ -686,7 +703,7 @@ class PhaseLoad(imported_abc):
         """
         Validate 'phase' input to be a valid PowerCycleTimeline phase.
         """
-
+        PowerCyclePhase._validate(phase)
         return phase
 
     @classmethod
@@ -703,6 +720,26 @@ class PhaseLoad(imported_abc):
     # OPERATIONS
     # ------------------------------------------------------------------
 
+    def curve(self, time):
+        """
+        Create a curve by summing all the power load contributions at
+        the specified times.
+
+        This method applies the `curve` method from the `PowerLoad`
+        class to each load stored in the `load_set` attribute and sums
+        the results.
+
+        Parameters
+        ----------
+        time: `list`[`float`]
+            List of time values. [s]
+
+        Returns
+        -------
+        curve: `list`[`float`]
+            List of power values. [W]
+        """
+
     # ------------------------------------------------------------------
     # VISUALIZATION
     # ------------------------------------------------------------------
@@ -711,7 +748,7 @@ class PhaseLoad(imported_abc):
 # ######################################################################
 # PULSE LOAD
 # ######################################################################
-class PulseLoad:
+class PulseLoad(PowerCycleABC):
     """
     Representation of the total power load during a complete pulse.
 

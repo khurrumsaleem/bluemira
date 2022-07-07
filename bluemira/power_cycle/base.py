@@ -10,6 +10,18 @@ import numpy as np
 
 # from typing import Union
 
+
+# ######################################################################
+# CLASS PROPERTY DECORATOR
+# ######################################################################
+class classproperty(object):
+    def __init__(self, fget):
+        self.fget = fget
+
+    def __get__(self, owner_self, owner_cls):
+        return self.fget(owner_cls)
+
+
 # ######################################################################
 # POWER CYCLE ABSTRACT BASE CLASS
 # ######################################################################
@@ -58,9 +70,6 @@ class PowerCycleABC(abc.ABC):
         Issue error associated with...
         """
 
-        # Child class name
-        class_name = cls.__name__
-
         # Retrieve errors of that class
         error_dict = cls._errors
 
@@ -71,48 +80,26 @@ class PowerCycleABC(abc.ABC):
             # Retrieve particular error
             the_error = error_dict[label]
 
-            # Find substitution keywords in error message
-            keywords = the_error._search_keywords()
-
-            # Substitute keywords if they are class attributes
-            for keyword in keywords:
-
-                # Search for class attribute
-                attribute = keyword.lower()
-                attribute = attribute.replace("%", "")
-                attribute = attribute.replace(":", "")
-                attribute = attribute.replace(".", "")
-
-                # Update error message depending on case
-                if attribute == "class_name":
-                    value = class_name  # Retrieve class name
-                elif hasattr(cls, attribute):
-
-                    # Retrieve class attribute value
-                    value = getattr(cls, attribute)
-
-                    # Join values, if attribute is a list
-                    if isinstance(value, list):
-                        value = PowerCycleUtilities._join_valid_values(value)
-
-                # Update error message
-                the_error._update_msg(keyword, value)
-
             # Retrieve error attributes
             error_type = the_error.err_type
             error_msg = the_error.err_msg
 
             # Build raising function
             raise_function = error_type + "Error"
-            raise_function = f"raise {raise_function}('''{error_msg}''')"
+            raise_function = f"""
+                raise {raise_function}('''{error_msg}''')
+                """
 
             exec(raise_function)  # Issue error
         else:
 
+            # Child class name
+            class_name = cls.__name__
+
             # Issue error
             raise ValueError(
                 f"""
-                Unknown label for error in class {class_name}.
+                Unknown error label for error in class {class_name}.
                 """
             )
 
@@ -232,15 +219,6 @@ class PowerCycleError(abc.ABC):
         # Output keywords
         return keywords
 
-    def _update_msg(self, keyword: str, new_text: str):
-        """
-        Update the `err_msg` attribute of an instance with a string
-        provided, by substitution.
-        """
-        err_msg = self.err_msg
-        err_msg = err_msg.replace(keyword, new_text)
-        self.err_msg = err_msg
-
 
 # ######################################################################
 # POWER CYCLE UTILITIES
@@ -254,25 +232,20 @@ class PowerCycleUtilities:
     # DATA MANIPULATION
     # ------------------------------------------------------------------
     @staticmethod
-    def _join_valid_values(values_list):
+    def _join_valid_values(valid_values):
         """
-        Given a list of values, creates a string listing them as valid
-        values to be printed as part of an error message by putting
-        quotation marks around them and joining them with comma
+        Given a collection of values, creates a string listing them as
+        valid values to be printed as part of an error message by
+        putting quotation marks around them and joining them with comma
         delimiters.
+        If the input is a `list`, elements of the list are considered
+        the valid values. If the input is a `dict`, the dictionary keys
+        are considered the valid values.
         """
-        if isinstance(values_list, (list)):
-
-            # Convert every value to string
-            string_values = [str(element) for element in values_list]
-
-            # Create string message
-            values_msg = "', '".join(string_values)
-            values_msg = "'" + values_msg + "'"
-
-            # Output message
-            return values_msg
-
+        if isinstance(valid_values, dict):
+            values_list = list(valid_values.keys())
+        elif isinstance(valid_values, list):
+            values_list = valid_values
         else:
             raise TypeError(
                 """
@@ -280,6 +253,16 @@ class PowerCycleUtilities:
                 values is not a `list`.
                 """
             )
+
+        # Convert every value to string
+        string_values = [str(element) for element in values_list]
+
+        # Create string message
+        values_msg = "', '".join(string_values)
+        values_msg = "'" + values_msg + "'"
+
+        # Output message
+        return values_msg
 
     @staticmethod
     def add_dict_entries(dictionary, new_entries):
