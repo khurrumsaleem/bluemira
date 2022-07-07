@@ -41,15 +41,15 @@ class PowerCycleABC(abc.ABC):
         """
         Validate a name for class instance creation to be a string.
         """
-        '''
+        class_name = cls.__name__
         if not isinstance(name, (str)):
             raise TypeError(
                 f"""
                 The 'name' used to create an instance of the
-                {cls.__class__.__name__} class must be a `str`.
+                {class_name} class must be a `str`.
                 """
             )
-        '''
+
         return name
 
     @classmethod
@@ -72,24 +72,24 @@ class PowerCycleABC(abc.ABC):
             the_error = error_dict[label]
 
             # Find substitution keywords in error message
-            keywords = the_error.search_keywords
+            keywords = the_error._search_keywords()
 
             # Substitute keywords if they are class attributes
             for keyword in keywords:
 
                 # Search for class attribute
-                attribute = keyword.replace("%", "")
+                attribute = keyword.lower()
+                attribute = attribute.replace("%", "")
+                attribute = attribute.replace(":", "")
+                attribute = attribute.replace(".", "")
 
                 # Update error message depending on case
                 if attribute == "class_name":
-
-                    # Retrieve class name
-                    value = class_name
-
+                    value = class_name  # Retrieve class name
                 elif hasattr(cls, attribute):
 
                     # Retrieve class attribute value
-                    value = cls.attribute
+                    value = getattr(cls, attribute)
 
                     # Join values, if attribute is a list
                     if isinstance(value, list):
@@ -100,15 +100,13 @@ class PowerCycleABC(abc.ABC):
 
             # Retrieve error attributes
             error_type = the_error.err_type
-            error_msg = the_error.err_type
+            error_msg = the_error.err_msg
 
             # Build raising function
             raise_function = error_type + "Error"
-            raise_function = f"{raise_function}({error_msg})"
+            raise_function = f"raise {raise_function}('''{error_msg}''')"
 
-            # Issue error
-            eval(raise_function)
-
+            exec(raise_function)  # Issue error
         else:
 
             # Issue error
@@ -127,27 +125,6 @@ class PowerCycleABC(abc.ABC):
         if not isinstance(input, (list)):
             input = [input]
         return input
-
-    '''
-    @staticmethod
-    @abc.abstractmethod
-    def _validate(subclass, object):
-        """
-        Validate `object` to be an instance of the class that calls
-        this method.
-        """
-        # class_name = subclass.__class__.__name__
-        # class_name = cls.__new__(cls)
-        subclass_name = subclass.__name__
-        if not type(object) == subclass:
-            raise TypeError(
-                f"""
-                The tested object is not an instance of the
-                {subclass_name} class.
-                """
-            )
-        return object
-    # '''
 
     @classmethod
     def _validate(cls, object):
@@ -239,7 +216,7 @@ class PowerCycleError(abc.ABC):
         err_msg = self.err_msg
 
         # Split message in whitespaces
-        words = err_msg.split
+        words = err_msg.split()
 
         # Preallocate output
         keywords = []
@@ -255,19 +232,19 @@ class PowerCycleError(abc.ABC):
         # Output keywords
         return keywords
 
-    def update_msg(self, keyword: str, new_text: str):
+    def _update_msg(self, keyword: str, new_text: str):
         """
         Update the `err_msg` attribute of an instance with a string
-        provided.
+        provided, by substitution.
         """
-        self.err_msg.replace(keyword, new_text)
+        err_msg = self.err_msg
+        err_msg = err_msg.replace(keyword, new_text)
+        self.err_msg = err_msg
 
 
 # ######################################################################
 # POWER CYCLE UTILITIES
 # ######################################################################
-
-
 class PowerCycleUtilities:
     """
     Useful functions for multiple classes in the Power Cycle module.

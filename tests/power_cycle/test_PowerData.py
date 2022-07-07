@@ -18,6 +18,10 @@ test_data = [6, 9, 7, 8]
 # Create instance of PowerData
 test_instance = imported_class(test_name, test_time, test_data)
 
+imported_class(
+    "test",
+)
+
 # Print instance attributes
 pprint(test_instance._plot_defaults)
 pprint(test_instance.time)

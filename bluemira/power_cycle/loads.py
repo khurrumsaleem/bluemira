@@ -32,9 +32,9 @@ class PowerData(imported_abc):
     ----------
     name: `str`
         Description of the `PowerData` instance.
-    time: `float`
+    time: `int` | `float` | `list`[`int` | `float`]
         List of time values that define the PowerData. [s]
-    data: `float`
+    data: `int` | `float` | `list`[`int` | `float`]
         List of power values that define the PowerData. [W]
     """
 
@@ -77,8 +77,8 @@ class PowerData(imported_abc):
     def __init__(
         self,
         name,
-        time: Union[Union[int, float], List[Union[int, float]]],
-        data: Union[Union[int, float], List[Union[int, float]]],
+        time: Union[int, float, List[Union[int, float]]],
+        data: Union[int, float, List[Union[int, float]]],
     ):
 
         # Call superclass constructor
@@ -93,25 +93,6 @@ class PowerData(imported_abc):
 
         # Validate created instance
         self._sanity()
-
-    '''
-    @classmethod
-    def _validate_input(cls, input):
-        """
-        Validate an input for class instance creation to be a list of
-        floats.
-        """
-        for i in input:
-            if not isinstance(i, (int, float)):
-                raise TypeError(
-                    f"""
-                    The inputs used to create an instance of the
-                    {cls.__class__.__name__} class must be lists of
-                    floats.
-                    """
-                )
-        return input
-    '''
 
     @classmethod
     def _is_increasing(cls, input):
@@ -141,12 +122,6 @@ class PowerData(imported_abc):
     # OPERATIONS
     # ------------------------------------------------------------------
 
-    """
-    @classmethod
-    def _validate(cls, object):
-        object = super()._validate(cls, object)
-        return object
-    """
     # ------------------------------------------------------------------
     # VISUALIZATION
     # ------------------------------------------------------------------
@@ -230,10 +205,10 @@ class PowerLoad(imported_abc):
     ----------
     name: 'str'
         Description of the `PowerLoad` instance.
-    load: `PowerData` or `list`[`PowerData`]
+    load: `PowerData` | `list`[`PowerData`]
         Collection of instances of the `PowerData` class that define
         the `PowerLoad` object.
-    model: `str` or `list[`str`]
+    model: `str` | `list[`str`]
         List of types of model that defines values between points
         defined in the `load` Attribute. Valid models include:
         - 'ramp'
@@ -290,8 +265,15 @@ class PowerLoad(imported_abc):
             "Value",
             """
                 The attributes `load` and `model` of an instance of the
-                %CLASS_NAME class must have the same
-                length.
+                %CLASS_NAME class must have the same length.
+                """,
+        ),
+        "time": imported_error(
+            "Type",
+            """
+                The `time` input used to create a curve with an instance
+                of the %CLASS_NAME class must be numeric or a list of
+                numeric values.
                 """,
         ),
     }
@@ -343,12 +325,6 @@ class PowerLoad(imported_abc):
     # ------------------------------------------------------------------
     # OPERATIONS
     # ------------------------------------------------------------------
-    """
-    @classmethod
-    def _validate(cls, object):
-        object = super()._validate(cls, object)
-        return object
-    """
 
     def __add__(self, other):
         """
@@ -379,13 +355,7 @@ class PowerLoad(imported_abc):
         time = super()._validate_list(time)
         for element in time:
             if not isinstance(element, (int, float)):
-                raise TypeError(
-                    f"""
-                    The `time` input used to create a curve with an
-                    instance of the {cls.__class__.__name__} class must
-                    be numeric or a list of numeric values.
-                    """
-                )
+                cls._issue_error("time")
         return time
 
     @classmethod
@@ -507,9 +477,7 @@ class PowerLoad(imported_abc):
         # Validate `n_points`
         n = n_points
         if n == 0:
-
-            # No alterations to vector
-            refined_vector = vector
+            refined_vector = vector  # No alterations to vector
         else:
 
             # For each curve segment (i.e. pair of points)
@@ -681,10 +649,10 @@ class PhaseLoad(imported_abc):
     ----------
     name: 'str'
         Description of the `PhaseLoad` instance.
-    phase: `str`
-        Pulse phase specification. Must be compliant with the phases
-        defined in `PowerCycleTimeline` class.
-    load_set: `PowerLoad` or `list`[`PowerLoad`]
+    phase: `PowerCyclePhase`
+        Pulse phase specification, that determines in which phase the
+        load happens.
+    load_set: `PowerLoad` | `list`[`PowerLoad`]
         Collection of instances of the `PowerLoad` class that define
         the `PhaseLoad` object.
     """
@@ -744,5 +712,18 @@ class PhaseLoad(imported_abc):
 # PULSE LOAD
 # ######################################################################
 class PulseLoad:
+    """
+    Representation of the total power load during a complete pulse.
+
+    Defines the pulse load with a set of `PhaseLoad` instances.
+
+    Parameters
+    ----------
+    name: 'str'
+        Description of the `PhaseLoad` instance.
+    pulse: `PowerCyclePulse`
+        Pulse specification, that determines in which order the pulse
+        phases happen.
+    """
 
     pass
