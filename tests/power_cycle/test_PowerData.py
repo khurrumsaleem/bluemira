@@ -19,7 +19,6 @@ test_data = [6, 9, 7, 8]
 test_instance = imported_class(test_name, test_time, test_data)
 
 # Print instance attributes
-pprint(test_instance._plot_defaults)
 pprint(test_instance.time)
 pprint(test_instance.data)
 
@@ -33,7 +32,7 @@ plt.figure()
 plt.grid()
 plot_list = test_instance.plot()
 pprint(plot_list)
-imported_utilities.adjust_2d_graph_ranges(x_frac=0.1, y_frac=0.1)
+imported_utilities.adjust_2d_graph_ranges()
 
 # Show plots
 plt.show()

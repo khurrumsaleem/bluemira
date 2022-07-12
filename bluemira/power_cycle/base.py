@@ -38,8 +38,29 @@ class PowerCycleABC(abc.ABC):
     """
 
     # ------------------------------------------------------------------
+    # CLASS ATTRIBUTES
+    # ------------------------------------------------------------------
+
+    # Plot defaults (arguments for `matplotlib.pyplot.plot`)
+    _plot_kwargs = {
+        "c": "k",  # Line color
+        "lw": 2,  # Line width
+        "ls": "-",  # Line style
+    }
+    _scatter_kwargs = {
+        "c": "k",  # Marker color
+        "s": 100,  # Marker size
+        "marker": "x",  # Marker style
+    }
+
+    # Plot text settings (for `matplotlib.pyplot.text`)
+    _text_angle = 45  # rotation angle
+    _text_index = -1  # index of (time,data) point used for location
+
+    # ------------------------------------------------------------------
     # CONSTRUCTOR
     # ------------------------------------------------------------------
+
     def __init__(self, name: str):
 
         # Store name
@@ -128,6 +149,39 @@ class PowerCycleABC(abc.ABC):
                 """
             )
         return object
+
+    # ------------------------------------------------------------------
+    # VISUALIZATION
+    # ------------------------------------------------------------------
+    @classmethod
+    def _validate_n_points(cls, n_points):
+        """
+        Validate an 'n_points' input. If `None`, retrieves the default
+        of the class; else must be non-negative integer.
+        """
+        if not n_points:
+            n_points = cls._n_points
+        else:
+            n_points = int(n_points)
+            if n_points < 0:
+                cls._issue_error("n_points")
+        return n_points
+
+    def _make_secondary_in_plot(self):
+        """
+        Alters the `_plot_kwargs` and `_text_index` attributes of an
+        instance of this class, to enforce:
+            - more subtle plotting characteristics for lines
+            - a different location for texts
+        that are displayed on a plot, as to not coincide with the
+        primary plot.
+        """
+        self._text_index = 0
+        self._plot_kwargs = {
+            "c": "k",  # Line color
+            "lw": 1,  # Line width
+            "ls": "--",  # Line style
+        }
 
 
 # ######################################################################
@@ -318,7 +372,7 @@ class PowerCycleUtilities:
         """
         if ax is None:
             ax = plt.gca()
-        elif not isinstance(ax, (plt.axes.Axes)):
+        elif not isinstance(ax, plt.Axes):
             raise TypeError(
                 """
                 The argument 'ax' used to create a plot is not

@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 
 # from scipy.interpolate import interp1d as imported_interp1d
 from _TIAGO_FILES_.Tools import Tools as imported_tools
+from bluemira.power_cycle.base import PowerCycleUtilities as imported_utilities
 from bluemira.power_cycle.loads import PowerData as imported_class_1
 from bluemira.power_cycle.loads import PowerLoad as imported_class_2
 
@@ -39,6 +40,7 @@ plt.figure()
 plt.grid()
 instance_1.plot(c="r")
 instance_2.plot(c="b")
+imported_utilities.adjust_2d_graph_ranges()
 
 # Test addition method
 plt.figure()

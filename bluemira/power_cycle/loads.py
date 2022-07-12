@@ -46,17 +46,6 @@ class PowerData(PowerCycleABC):
     # CLASS ATTRIBUTES
     # ------------------------------------------------------------------
 
-    # Plot defaults (arguments for `matplotlib.pyplot.scatter`)
-    _plot_defaults = {
-        "c": "k",  # Marker color
-        "s": 100,  # Marker size
-        "marker": "x",  # Marker style
-    }
-
-    # Plot text settings (for `matplotlib.pyplot.text`)
-    _text_angle = 45  # rotation angle
-    _ind_point = 0  # index of (time,data) point used for location
-
     # Error messages
     @classproperty
     def _errors(cls):
@@ -165,7 +154,7 @@ class PowerData(PowerCycleABC):
         ax = PowerCycleUtilities.validate_axes(ax)
 
         # Retrieve default plot options
-        default = self._plot_defaults
+        default = self._scatter_kwargs
 
         # Set each default options in kwargs, if not specified
         kwargs = PowerCycleUtilities.add_dict_entries(kwargs, default)
@@ -184,7 +173,7 @@ class PowerData(PowerCycleABC):
         plot_list.append(plot_obj)
 
         # Add text to plot
-        index = self._ind_point
+        index = self._text_index
         text = f"{name} (PowerData)"
         label = name + " (name)"
         angle = self._text_angle
@@ -229,24 +218,6 @@ class PowerLoad(PowerCycleABC):
 
     # Default number of points in each curve segment
     _n_points = 100
-
-    # Plot defaults (arguments for `matplotlib.pyplot.plot`)
-    _plot_defaults = {
-        "c": "k",  # Line color
-        "lw": 2,  # Line width
-        "ls": "-",  # Line style
-    }
-
-    # Detailed plot defaults (arguments for `matplotlib.pyplot.plot`)
-    _detailed_defaults = {
-        "c": "k",  # Line color
-        "lw": 1,  # Line width
-        "ls": "--",  # Line style
-    }
-
-    # Plot text settings (for `matplotlib.pyplot.text`)
-    _text_angle = 45  # rotation angle
-    _ind_point = -1  # index of (time,data) point used for location
 
     # Implemented models (add model name here after implementation)
     _valid_models = ["ramp", "step"]
@@ -460,20 +431,6 @@ class PowerLoad(PowerCycleABC):
     # VISUALIZATION
     # ------------------------------------------------------------------
 
-    @classmethod
-    def _validate_n_points(cls, n_points):
-        """
-        Validate 'n_points' input. If `None`, retrieves default; else
-        must be non-negative integer.
-        """
-        if not n_points:
-            n_points = cls._n_points
-        else:
-            n_points = int(n_points)
-            if n_points < 0:
-                cls._issue_error("n_points")
-        return n_points
-
     @staticmethod
     def _refine_vector(vector, n_points):
         """
@@ -531,7 +488,9 @@ class PowerLoad(PowerCycleABC):
             Determines whether the plot will include all individual
             `PowerData` instances (computed with their respective
             `model` entries), that summed result in the normal plotted
-            curve. By default this input is set to `False`.
+            curve. Plotted as secondary plots, as defined in
+            `PowerCycleABC` class. By default this input is set to
+            `False`.
         **kwargs = `dict`
             Options for the `plot` method.
 
@@ -553,7 +512,7 @@ class PowerLoad(PowerCycleABC):
         ax = PowerCycleUtilities.validate_axes(ax)
 
         # Retrieve default plot options (main curve)
-        default = self._plot_defaults
+        default = self._plot_kwargs
 
         # Set each default options in kwargs, if not specified
         kwargs = PowerCycleUtilities.add_dict_entries(kwargs, default)
@@ -585,7 +544,7 @@ class PowerLoad(PowerCycleABC):
             # Append current time in time vector for plotting
             time = time + current_time
 
-        # Sort and unique of comeplete time vector
+        # Sort and unique of complete time vector
         time = list(set(time))
         time.sort()
 
@@ -601,7 +560,7 @@ class PowerLoad(PowerCycleABC):
         plot_list.append(plot_obj)
 
         # Add descriptive label to curve
-        index = self._ind_point
+        index = self._text_index
         text = f"{name} (PowerLoad)"
         label = name + " (name)"
         angle = self._text_angle
@@ -617,12 +576,6 @@ class PowerLoad(PowerCycleABC):
         # Validate `detailed` option
         if detailed:
 
-            # Retrieve default plot options (detailed curves)
-            default = self._detailed_defaults
-
-            # Modify plot options for detailed curves
-            kwargs.update(default)
-
             # For each element
             for e in range(n_elements):
 
@@ -637,10 +590,14 @@ class PowerLoad(PowerCycleABC):
                     current_powerdata, current_model, time
                 )
 
-                # Plot PowerData with same plot options
-                current_plot_list = current_powerdata.plot(**kwargs)
+                # Change PowerData to secondary in plot
+                current_powerdata._make_secondary_in_plot()
 
-                # Plot current curve as line with descriptive label
+                # Plot PowerData with same plot options
+                current_plot_list = current_powerdata.plot()
+
+                # Plot current curve as line with secondary options
+                kwargs.update(current_powerdata._plot_kwargs)
                 plot_obj = ax.plot(time, current_curve, **kwargs)
 
                 # Append current plot list with current curve
@@ -649,8 +606,8 @@ class PowerLoad(PowerCycleABC):
                 # Store current plot list in output
                 plot_list.append(current_plot_list)
 
-            # Return plot object
-            return plot_list
+        # Return plot object
+        return plot_list
 
 
 # ######################################################################
@@ -685,6 +642,23 @@ class PhaseLoad(PowerCycleABC):
     # ------------------------------------------------------------------
     # CLASS ATTRIBUTES
     # ------------------------------------------------------------------
+
+    # Default number of points in visualization methods
+    _n_points = 100
+
+    # Plot defaults (arguments for `matplotlib.pyplot.plot`)
+    _plot_defaults = {
+        "c": "k",  # Line color
+        "lw": 2,  # Line width
+        "ls": "-",  # Line style
+    }
+
+    # Detailed plot defaults (arguments for `matplotlib.pyplot.plot`)
+    _detailed_defaults = {
+        "c": "k",  # Line color
+        "lw": 1,  # Line width
+        "ls": "--",  # Line style
+    }
 
     # Error messages
     @classproperty
@@ -854,6 +828,10 @@ class PhaseLoad(PowerCycleABC):
         # Cut values above duration
         cut_time = [t for t in time if t <= duration]
 
+        # If time has been cut, add phase duration as last element
+        if not len(time) == len(cut_time):
+            cut_time.append(duration)
+
         # Output new list
         return cut_time
 
@@ -942,6 +920,125 @@ class PhaseLoad(PowerCycleABC):
                 all_data.append([element.time, element.data])
 
         return all_data
+
+    def plot(self, ax=None, n_points=None, detailed=False, **kwargs):
+        """
+        Plot a `PhaseLoad` curve, built using the attributes that define
+        the instance. The curve is ploted up to the duration of the
+        phase stored in the `phase` attribute.
+
+        This method can also plot the individual `PowerLoad` objects
+        stored in the `load_set` attribute that define the `PhaseLoad`
+        instance. If requested by setting the `detailed` argument to
+        `True`, this method calls the `plot` method of each `PowerLoad`
+        object. In such a case, the number of points interpolated in
+        the `PowerLoad.plot` calls can be specified.
+
+        Parameters
+        ----------
+        n_points: `int`
+            Number of points used to create time vector for plotting
+            the `PhaseLoad`. The default value is `None`, which uses
+            the default value set as a class attribute.
+            If `detailed` is set to True, this value is also used to
+            define the interpolation in each `PowerLoad` curve segment.
+            In such a case, using the default value of `None` forces
+            each `PowerLoad.plot` call to use the default value for
+            `n_points` of that class.
+        detailed: `bool`
+            Determines whether the plot will include all individual
+            `PowerLoad` instances, that summed result in the normal
+            plotted curve. Plotted as secondary plots, as defined in
+            `PowerCycleABC` class. By default this input is set to
+            `False`.
+        **kwargs = `dict`
+            Options for the `plot` method.
+
+        Returns
+        -------
+        plot_list: `list`
+            List of plot objects created by the `matplotlib` package.
+            The first element of the list is the plot object created
+            using the `pyplot.plot`, while the second element of the
+            list is the plot object created using the `pyplot.text`
+            method.
+            If the `detailed` argument is set to `True`, the list
+            continues to include the lists of plot objects created by
+            the `PowerData` class, with the addition of plotted curves
+            for the visualization of the model selected for each load.
+        """
+
+        # Retrieve instance attributes
+        name = self.name
+
+        # Retrieve phase duration
+        phase = self.phase
+        duration = phase.duration
+
+        # Retrieve default plot options (main curve)
+        default = self._plot_kwargs
+
+        # Set each default options in kwargs, if not specified
+        kwargs = PowerCycleUtilities.add_dict_entries(kwargs, default)
+
+        # Validate axes
+        ax = PowerCycleUtilities.validate_axes(ax)
+
+        # Validate `n_points`
+        n_points = self._validate_n_points(n_points)
+
+        # Create generic time vector with duration
+        time = np.linspace(0, duration, n_points)
+
+        # Compute curve
+        curve = self.curve(time)
+
+        # Preallocate output
+        plot_list = []
+
+        # Plot curve as line
+        label = name + " (curve)"
+        plot_obj = ax.plot(time, curve, label=label, **kwargs)
+        plot_list.append(plot_obj)
+
+        # Add descriptive label to curve
+        index = self._text_index
+        text = f"{name} (PhaseLoad)"
+        label = name + " (name)"
+        angle = self._text_angle
+        plot_obj = ax.text(
+            time[index],
+            curve[index],
+            text,
+            label=label,
+            rotation=angle,
+        )
+        plot_list.append(plot_obj)
+
+        # Validate `detailed` option
+        if detailed:
+
+            # Retrieve load set
+            normal_set = self._normal_set
+
+            # For each element
+            for load in normal_set:
+
+                # Change PowerLoad to secondary in plot
+                load._make_secondary_in_plot()
+
+                # Plot current load with default plot options
+                current_plot_list = load.plot(
+                    ax=ax,
+                    n_points=n_points,
+                )
+
+                # Store current plot list in output
+                for plot_obj in current_plot_list:
+                    plot_list.append(plot_obj)
+
+        # Return plot object
+        return plot_list
 
 
 # ######################################################################
