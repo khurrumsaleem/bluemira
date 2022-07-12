@@ -20,9 +20,10 @@ install_requires = [
     "click",
     "CoolProp",
     "fortranformat",
+    "gmsh",
     "imageio",
     "ipykernel",
-    "matplotlib<=3.3.4",  # upgrade on BP removal
+    "matplotlib>=3.5",
     "natsort",
     "neutronics-material-maker==0.1.11",  # Crash on upgrade
     "nlopt",
@@ -37,11 +38,9 @@ install_requires = [
     "pyquaternion",
     "scikit-learn",
     "seaborn",
-    "sectionproperties",  # 1.0.8dev (with scipy < 1.6)
     "Shapely",
     "tables",
     "tabulate",
-    "trimesh",
     "scipy<=1.5.3",
     "wrapt",
 ]
@@ -121,7 +120,6 @@ setup(
     install_requires=install_requires,
     extras_require=extras_require,
     entry_points={
-        "console_scripts": ["bluemira=BLUEPRINT.blueprint_cli:cli"],
         "numba_extensions": ["init=numba_scipy:_init_extension"],
     },
 )

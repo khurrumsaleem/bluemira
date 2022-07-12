@@ -25,9 +25,10 @@ Utility functions for interacting with external codes
 
 
 import os
+import subprocess  # noqa: S404
 import threading
 from enum import Enum
-from typing import Dict, Literal
+from typing import Dict, List, Literal
 
 from bluemira.base.look_and_feel import (
     _bluemira_clean_flush,
@@ -78,16 +79,16 @@ def _get_mapping(
     params, code_name: str, send_recv: Literal["send", "recv"], override: bool = False
 ) -> Dict[str, str]:
     """
-    Create a dictionary to get the send or recieve mappings for a given code.
+    Create a dictionary to get the send or receive mappings for a given code.
 
     Parameters
     ----------
     params: ParameterFrame
-        The parameters with mappings that define what is going to be sent or recieved.
+        The parameters with mappings that define what is going to be sent or received.
     code_name: str
-        The identifying name of the code that data being send to or recieved from.
+        The identifying name of the code that data being send to or received from.
     send_recv: Literal["send", "recv"]
-        Whether to generate a mapping for sending or reciving.
+        Whether to generate a mapping for sending or receiving.
     override: bool, optional
         If True then map variables with a mapping defined, even if recv or send=False.
         By default, False.
@@ -113,24 +114,24 @@ def _get_mapping(
 
 def get_recv_mapping(params, code_name, recv_all=False):
     """
-    Get the recieve mapping for variables mapped from the external code to the provided
+    Get the receive mapping for variables mapped from the external code to the provided
     input ParameterFrame.
 
     Parameters
     ----------
     params: ParameterFrame
-        The parameters with mappings that define what is going to be recieved.
+        The parameters with mappings that define what is going to be received.
     code_name: str
-        The identifying name of the code that is being recieved from.
+        The identifying name of the code that is being received from.
     recv_all: bool, optional
-        If True then recieve all variables with a mapping defined, even if recv=False. By
+        If True then receive all variables with a mapping defined, even if recv=False. By
         default, False.
 
     Returns
     -------
     mapping: Dict[str, str]
         The mapping between external code parameter names (key) and bluemira parameter
-        names (value) to use for recieving.
+        names (value) to use for receiving.
     """
     return _get_mapping(params, code_name, "recv", recv_all)
 
@@ -267,3 +268,38 @@ class LogPipe(threading.Thread):
         Close the write end of the pipe.
         """
         os.close(self.fd_write)
+
+
+def run_subprocess(command: List[str], run_directory: str = ".", **kwargs) -> int:
+    """
+    Run a subprocess terminal command piping the output into bluemira's
+    logs.
+
+    Parameters
+    ----------
+    command: List[str]
+        The arguments of the command to run.
+    run_directory: str
+        The directory to run the command in. Default is current working
+        directory.
+    **kwargs: Dict[str, Any]
+        Arguments passed directly to subprocess.Popen.
+
+    Returns
+    -------
+    return_code: int
+        The return code of the subprocess.
+    """
+    stdout = LogPipe("print")
+    stderr = LogPipe("error")
+
+    kwargs["cwd"] = run_directory
+    kwargs.pop("shell", None)  # Protect against user input
+
+    with subprocess.Popen(  # noqa :S603
+        command, stdout=stdout, stderr=stderr, shell=False, **kwargs  # noqa :S603
+    ) as s:
+        stdout.close()
+        stderr.close()
+
+    return s.returncode
