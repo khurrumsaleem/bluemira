@@ -26,20 +26,21 @@ install_requires = [
     "matplotlib>=3.5",
     "neutronics-material-maker==0.1.11",  # Crash on upgrade
     "nlopt",
-    "numba",
     "numba-scipy",
     "numpy",
     "pandas",
-    "pint",
     "periodictable",
+    "pint",
     "pyclipper",
     "pypet",
     "pyquaternion",
     "scikit-learn",
+    "scipy<=1.5.3",
     "seaborn",
     "tables",
     "tabulate",
     "scipy",
+    "typeguard",
     "wrapt",
 ]
 
