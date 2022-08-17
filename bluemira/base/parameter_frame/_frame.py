@@ -3,9 +3,12 @@ from __future__ import annotations
 import copy
 import json
 from dataclasses import dataclass
-from typing import Any, Dict, Mapping, Tuple, Type, Union, get_args
+from typing import Any, Dict, Mapping, Tuple, Type, TypeVar, Union, get_args
 
 from bluemira.base.parameter_frame._parameter import NewParameter, ParameterValueType
+
+# Workaround for lack of typing.Self (Python 3.11) https://peps.python.org/pep-0673/
+_SelfT = TypeVar("_SelfT", bound="NewParameterFrame")
 
 
 @dataclass
@@ -32,10 +35,10 @@ class NewParameterFrame:
 
     @classmethod
     def from_dict(
-        cls,
+        cls: Type[_SelfT],
         data: Dict[str, Mapping[str, Union[str, ParameterValueType]]],
         allow_unknown=False,
-    ):
+    ) -> _SelfT:
         """Initialize an instance from a dictionary."""
         data = copy.deepcopy(data)
         kwargs: Dict[str, NewParameter] = {}
@@ -60,7 +63,7 @@ class NewParameterFrame:
         return out
 
     @classmethod
-    def _validate_parameter_field(cls, field: str) -> Tuple[Type]:
+    def _validate_parameter_field(cls, field: str) -> Tuple[Type, ...]:
         member_type = cls.__dataclass_fields__[field].type
         if (member_type is not NewParameter) and (
             not hasattr(member_type, "__origin__")
@@ -71,7 +74,7 @@ class NewParameterFrame:
         return value_types
 
     @classmethod
-    def from_frame(cls, frame: NewParameterFrame) -> NewParameterFrame:
+    def from_frame(cls: Type[_SelfT], frame: NewParameterFrame) -> _SelfT:
         """Initialise an instance from another NewParameterFrame."""
         kwargs = {}
         for field in cls.__dataclass_fields__:
@@ -85,7 +88,7 @@ class NewParameterFrame:
         return cls(**kwargs)
 
     @classmethod
-    def from_json(cls, json_in: Union[str, json.SupportsRead]) -> NewParameterFrame:
+    def from_json(cls: Type[_SelfT], json_in: Union[str, json.SupportsRead]) -> _SelfT:
         """Initialise an instance from a JSON file, string, or reader."""
         if hasattr(json_in, "read"):
             # load from file stream
