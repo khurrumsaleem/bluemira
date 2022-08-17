@@ -1,6 +1,6 @@
 import copy
 from dataclasses import dataclass
-from typing import Dict, Generic, List, Tuple, Type, TypeVar
+from typing import Dict, Generic, List, Tuple, Type, TypedDict, TypeVar
 
 from typeguard import typechecked
 
@@ -124,3 +124,18 @@ class NewParameter(Generic[ParameterValueType]):
     def _add_history_record(self):
         history_entry = ParameterValue(self.value, self.source)
         self._history.append(history_entry)
+
+
+class ParamDictT(TypedDict, Generic[ParameterValueType], total=False):
+    """
+    Gives the structure of a Dict that can be converted to a Parameter.
+
+    This type is purely used for typing.
+    """
+
+    name: str
+    value: ParameterValueType
+    unit: str
+    source: str
+    description: str
+    long_name: str

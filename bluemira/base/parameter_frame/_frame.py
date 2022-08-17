@@ -3,9 +3,9 @@ from __future__ import annotations
 import copy
 import json
 from dataclasses import dataclass
-from typing import Any, Dict, Mapping, Tuple, Type, TypeVar, Union, get_args
+from typing import Dict, Tuple, Type, TypeVar, Union, get_args
 
-from bluemira.base.parameter_frame._parameter import NewParameter, ParameterValueType
+from bluemira.base.parameter_frame._parameter import NewParameter, ParamDictT
 
 # Workaround for lack of typing.Self (Python 3.11) https://peps.python.org/pep-0673/
 _SelfT = TypeVar("_SelfT", bound="NewParameterFrame")
@@ -35,9 +35,7 @@ class NewParameterFrame:
 
     @classmethod
     def from_dict(
-        cls: Type[_SelfT],
-        data: Dict[str, Mapping[str, Union[str, ParameterValueType]]],
-        allow_unknown=False,
+        cls: Type[_SelfT], data: Dict[str, ParamDictT], allow_unknown=False
     ) -> _SelfT:
         """Initialize an instance from a dictionary."""
         data = copy.deepcopy(data)
@@ -55,7 +53,7 @@ class NewParameterFrame:
             raise ValueError(f"Unknown parameter(s) '{list(data)}' in dict.")
         return cls(**kwargs)
 
-    def to_dict(self) -> Dict[str, Dict[str, Any]]:
+    def to_dict(self) -> Dict[str, ParamDictT]:
         """Serialize this NewParameterFrame to a dictionary."""
         out = {}
         for member in self.__dataclass_fields__:
