@@ -4,18 +4,18 @@ from typing import Dict, Generic, List, Tuple, Type, TypedDict, TypeVar
 
 from typeguard import typechecked
 
-ParameterValueType = TypeVar("ParameterValueType")
+_ParamValueT = TypeVar("_ParamValueT")
 
 
 @dataclass
-class ParameterValue(Generic[ParameterValueType]):
+class ParameterValue(Generic[_ParamValueT]):
     """Holds parameter value information."""
 
-    value: ParameterValueType
+    value: _ParamValueT
     source: str
 
 
-class NewParameter(Generic[ParameterValueType]):
+class NewParameter(Generic[_ParamValueT]):
     """
     Represents a parameter with physical units.
 
@@ -23,7 +23,7 @@ class NewParameter(Generic[ParameterValueType]):
     ----------
     name: str
         The name of the parameter.
-    value: ParameterValueType
+    value: _ParamValueT
         The parameter's value.
     unit: str
         The parameter's unit.
@@ -33,13 +33,17 @@ class NewParameter(Generic[ParameterValueType]):
         A description of the parameter.
     long_name: str
         A longer name for the parameter.
+    _value_types: Tuple[Type, ...]
+        Allowed types for `value`. An error is raised if `value` is not
+        one of these types. Optional argument, no type checking is
+        performed on `value` if this is not given.
     """
 
     @typechecked
     def __init__(
         self,
         name: str,
-        value: ParameterValueType,
+        value: _ParamValueT,
         unit: str = "",
         source: str = "",
         description: str = "",
@@ -73,7 +77,7 @@ class NewParameter(Generic[ParameterValueType]):
         return copy.deepcopy(self._history)
 
     @typechecked
-    def set_value(self, new_value: ParameterValueType, source: str = ""):
+    def set_value(self, new_value: _ParamValueT, source: str = ""):
         """Set the parameter's value and update the source."""
         self._value = new_value
         self._source = source
@@ -93,12 +97,12 @@ class NewParameter(Generic[ParameterValueType]):
         return self._name
 
     @property
-    def value(self) -> ParameterValueType:
+    def value(self) -> _ParamValueT:
         """Return the current value of the parameter."""
         return self._value
 
     @value.setter
-    def value(self, new_value: ParameterValueType):
+    def value(self, new_value: _ParamValueT):
         self.set_value(new_value, source="")
 
     @property
@@ -126,15 +130,15 @@ class NewParameter(Generic[ParameterValueType]):
         self._history.append(history_entry)
 
 
-class ParamDictT(TypedDict, Generic[ParameterValueType], total=False):
+class ParamDictT(TypedDict, Generic[_ParamValueT], total=False):
     """
     Gives the structure of a Dict that can be converted to a Parameter.
 
-    This type is purely used for typing.
+    This is purely used for typing.
     """
 
     name: str
-    value: ParameterValueType
+    value: _ParamValueT
     unit: str
     source: str
     description: str
