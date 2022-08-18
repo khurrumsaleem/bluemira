@@ -123,21 +123,23 @@ def get_unit(column_name):
 
 # Asummes the units are the same for both columns
 koz_LP_raw = xl_dict[koz_LP_k]
+koz_UP_raw = xl_dict[koz_UP_k]
+
+TF_inner_raw = xl_dict[TF_inner_k]
+TF_outer_raw = xl_dict[TF_outer_k]
+
 koz_LP = raw_uc(
     koz_LP_raw.to_numpy()[:, :2].astype(float), get_unit(koz_LP_raw.columns[0]), "m"
 ).T
 
-koz_UP_raw = xl_dict[koz_UP_k]
 koz_UP = raw_uc(
     koz_UP_raw.to_numpy()[:, :2].astype(float), get_unit(koz_UP_raw.columns[0]), "m"
 ).T
 
-TF_inner_raw = xl_dict[TF_inner_k]
 TF_inner = raw_uc(
     TF_inner_raw.to_numpy()[:, :2].astype(float), get_unit(TF_inner_raw.columns[0]), "m"
 ).T
 
-TF_outer_raw = xl_dict[TF_outer_k]
 TF_outer = raw_uc(
     TF_outer_raw.to_numpy()[:, :2].astype(float), get_unit(TF_outer_raw.columns[0]), "m"
 ).T
