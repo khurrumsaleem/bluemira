@@ -30,6 +30,7 @@ Attempt at recreating the EU-DEMO 2017 reference equilibria from a known coilset
 # with
 # - 300mw out
 # - 2 hr flat top
+
 # %%
 
 import json
