@@ -14,6 +14,7 @@ The EUDEMO reactor design routine.
 11. Produce power cycle report
 """
 
+import json
 import os
 from typing import Dict, TypeVar
 
@@ -30,13 +31,19 @@ PARAMS_FILE = os.path.join(ROOT_DIR, "params.json")
 _PfT = TypeVar("_PfT", bound=ParameterFrame)
 
 
+def read_json(file_path: str) -> Dict:
+    """Read a JSON file to a dictionary."""
+    with open(file_path, "r") as f:
+        return json.load(f)
+
+
 def radial_build(params: _PfT, build_config: Dict) -> _PfT:
     """
     Update parameters after a radial build is run.
 
-    Usual this would run an external code like PROCESS, but we'll just
+    Usually this would run an external code like PROCESS, but we'll just
     read in a previous PROCESS run, as the PROCESS solver hasn't yet
-    been made to work with the new ParameterFrame.
+    been made to work with the new ParameterFrame yet.
     """
     import json
 
@@ -46,43 +53,11 @@ def radial_build(params: _PfT, build_config: Dict) -> _PfT:
     return params
 
 
-def build(params: EUDEMOReactorParams, build_config: Dict):
-    params = radial_build(params, build_config["Radial Build"])
-
-
-def design_ivc_components(params, build_config):
-    return
-
-
 if __name__ == "__main__":
     params = make_parameter_frame(PARAMS_FILE, EUDEMOReactorParams)
     if params is None:
         raise ValueError("Params cannot be None")
-    build_config = {
-        "Radial build": {},
-        "Equilibrium": {
-            "plot_optimisation": False,
-            "run_mode": "run",
-            "file_path": "/home/bf2936/bluemira/code/bluemira/examples/design/EU-DEMO/EUDEMO_builders/reactor/equlibrium_eqdsk.json",
-        },
-        "IVC": {
-            "Wall silhouette": {
-                "param_class": "EUDEMO_builders.ivc.wall_silhouette_parameterisation::WallPolySpline",
-                "variables_map": {
-                    "x1": {  # ib radius
-                        "value": "r_fw_ib_in",
-                    },
-                    "x2": {  # ob radius
-                        "value": "r_fw_ob_in",
-                    },
-                },
-                "run_mode": "mock",
-                "name": "First Wall",
-                "problem_class": "bluemira.geometry.optimisation::MinimiseLengthGOP",
-            },
-            "Divertor silhouette": {},
-        },
-    }
+    build_config = read_json(os.path.join(ROOT_DIR, "build_config.json"))
 
     params = radial_build(params, build_config["Radial build"])
     eq = run_designer(EquilibriumDesigner, params, build_config["Equilibrium"])
