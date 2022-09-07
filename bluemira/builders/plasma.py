@@ -100,8 +100,8 @@ class PlasmaBuilder(Builder):
         lcfs: BluemiraWire
             LCFS wire
         """
-        inner = make_circle(lcfs.bounding_box.x_min, axis=[0, 1, 0])
-        outer = make_circle(lcfs.bounding_box.x_max, axis=[0, 1, 0])
+        inner = make_circle(lcfs.bounding_box.x_min, axis=[0, 0, 1])
+        outer = make_circle(lcfs.bounding_box.x_max, axis=[0, 0, 1])
         face = BluemiraFace([outer, inner], self.name)
         component = PhysicalComponent(self.LCFS, face)
         component.plot_options.face_options["color"] = BLUE_PALETTE["PL"]

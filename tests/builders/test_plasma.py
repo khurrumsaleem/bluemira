@@ -23,6 +23,8 @@
 Tests for plasma builder.
 """
 
+import numpy as np
+
 from bluemira.builders.plasma import PlasmaBuilder
 from bluemira.geometry.tools import make_polygon
 
@@ -50,3 +52,13 @@ class TestPlasmaBuilder:
         plasma = builder.build()
 
         assert plasma.lcfs() == self.square
+
+    def test_xy_lcfs_is_all_zero_in_z(self):
+        builder = PlasmaBuilder({}, self.square)
+        plasma = builder.build()
+
+        xy_shape = (
+            plasma.component().get_component("xy").get_component(builder.LCFS).shape
+        )
+        points = xy_shape.discretize(100)[0]
+        np.testing.assert_allclose(points[:, 2], 0.0)
