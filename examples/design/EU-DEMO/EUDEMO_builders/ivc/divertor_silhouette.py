@@ -24,7 +24,7 @@ Define builder for divertor
 import enum
 import operator
 from dataclasses import dataclass
-from typing import Callable, Dict, Iterable, List, Sequence, Tuple
+from typing import Callable, Dict, Iterable, List, Sequence, Tuple, Union
 
 import numpy as np
 
@@ -87,7 +87,7 @@ class DivertorSilhouetteDesigner(Designer[Tuple[BluemiraWire, ...]]):
 
     Parameters
     ----------
-    params: Dict[str, ParameterFrame]
+    params: Union[ParameterFrame, Dict]
         Divertor silhouette designer parameters
     equilibrium: Equilibrium
         The equilibrium to design around
@@ -106,7 +106,7 @@ class DivertorSilhouetteDesigner(Designer[Tuple[BluemiraWire, ...]]):
 
     def __init__(
         self,
-        params: Dict[str, ParameterFrame],
+        params: Union[Dict, ParameterFrame],
         equilibrium: Equilibrium,
         wall: BluemiraWire,
     ):

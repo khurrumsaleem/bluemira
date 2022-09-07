@@ -58,7 +58,7 @@ class WallSilhouetteDesigner(Designer[GeometryParameterisation]):
 
     Parameters
     ----------
-    params: Dict[str, ParameterFrame]
+    params: Union[ParameterFrame, Dict]
         Wall silhouette designer parameters
     build_config: Dict
         configuration of the design
@@ -86,17 +86,12 @@ class WallSilhouetteDesigner(Designer[GeometryParameterisation]):
         )
 
         self.variables_map = self.build_config.get("variables_map", {})
-
         self.file_path = self.build_config.get("file_path", None)
-
         problem_class = self.build_config.get("problem_class", None)
-
         if problem_class is not None:
             self.problem_class = get_class_from_module(problem_class)
             self.problem_settings = self.build_config.get("problem_settings", {})
-
             self.opt_config = self.build_config.get("optimisation_settings", {})
-
             self.algorithm_name = self.opt_config.get("algorithm_name", "SLSQP")
             self.opt_conditions = self.opt_config.get("conditions", {"max_eval": 100})
             self.opt_parameters = self.opt_config.get("parameters", {})
@@ -142,7 +137,7 @@ class WallSilhouetteDesigner(Designer[GeometryParameterisation]):
 
         if not hasattr(self, "problem_class"):
             raise ValueError(
-                f"Cannot execute {type(self).__name__} in RUN mode: no problem_class specified."
+                f"Cannot execute {type(self).__name__} in 'run' mode: no problem_class specified."
             )
 
         bluemira_debug(
@@ -180,9 +175,9 @@ class WallSilhouetteDesigner(Designer[GeometryParameterisation]):
         return design_problem.optimise()
 
     def _get_parameterisation(self):
-        return self.parameterisation_cls(self._derive_shape_params(self.variables_map))
+        return self.parameterisation_cls(self._derive_shape_params())
 
-    def _derive_shape_params(self, variables_map: Dict[str, str]) -> Dict:
+    def _derive_shape_params(self) -> Dict:
         shape_params = {}
         for key, val in self.variables_map.items():
             if isinstance(val, str):

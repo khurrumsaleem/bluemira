@@ -22,7 +22,7 @@
 Plasma Face Designer
 """
 from dataclasses import dataclass
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Union
 
 import numpy as np
 
@@ -41,13 +41,13 @@ class PlasmaFaceDesignerParams(ParameterFrame):
     c_rm: Parameter[float]
 
 
-class PlasmaFaceDesigner(Designer[BluemiraFace]):
+class PlasmaFaceDesigner(Designer[Tuple[BluemiraFace, BluemiraFace]]):
     """
     Designs the Plasma facing keep out zones
 
     Parameters
     ----------
-    params: Dict[str, ParameterFrame]
+    params: Union[ParameterFrame, Dict]
         Plasma face designer parameters
     ivc_boundary: BluemiraWire
         IVC boundary keep out zone
@@ -61,7 +61,7 @@ class PlasmaFaceDesigner(Designer[BluemiraFace]):
 
     def __init__(
         self,
-        params: Dict[str, ParameterFrame],
+        params: Union[ParameterFrame, Dict],
         ivc_boundary: BluemiraWire,
         wall_boundary: BluemiraWire,
         divertor_silhouette: Tuple[BluemiraWire, ...],
@@ -78,7 +78,7 @@ class PlasmaFaceDesigner(Designer[BluemiraFace]):
         Run method for PlasmaFaceDesigner
         """
         # For double null this and self.divertor_silhouette need a structure
-        # to accomodate two divertors
+        # to accommodate two divertors
         plasma_facing_wire = BluemiraWire(
             [self.wall_boundary, *self.divertor_silhouette]
         )

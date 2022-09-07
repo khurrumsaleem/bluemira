@@ -22,7 +22,7 @@
 IVC Boundary Designer
 """
 from dataclasses import dataclass
-from typing import Dict
+from typing import Dict, Union
 
 from bluemira.base.designer import Designer
 from bluemira.base.error import DesignError
@@ -47,7 +47,7 @@ class IVCBoundaryDesigner(Designer[BluemiraWire]):
 
     Parameters
     ----------
-    params: Dict[str, ParameterFrame]
+    params: Union[ParameterFrame, Dict]
         IVC Boundary designer parameters
     wall_shape: BluemiraWire
         Wall shape as defined by the wall silhouette designer
@@ -58,7 +58,7 @@ class IVCBoundaryDesigner(Designer[BluemiraWire]):
 
     def __init__(
         self,
-        params: Dict[str, ParameterFrame],
+        params: Union[ParameterFrame, Dict],
         wall_shape: BluemiraWire,
     ):
         super().__init__(params)
