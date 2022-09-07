@@ -148,7 +148,7 @@ class DivertorSilhouetteDesigner(Designer[Tuple[BluemiraWire, ...]]):
             outer_target, self.x_limits[idx_outer], self.z_limits[idx_outer]
         )
 
-        return inner_target, outer_target, dome, inner_baffle, outer_baffle
+        return inner_baffle, inner_target, dome, outer_target, outer_baffle
 
     def make_target(self, leg: LegPosition, label: str) -> BluemiraWire:
         """
