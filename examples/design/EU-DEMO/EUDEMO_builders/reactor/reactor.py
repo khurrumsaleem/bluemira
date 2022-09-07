@@ -21,6 +21,9 @@ from typing import Dict, TypeVar
 from bluemira.base.designer import run_designer
 from bluemira.base.parameter_frame import NewParameterFrame as ParameterFrame
 from bluemira.base.parameter_frame import make_parameter_frame
+from bluemira.builders.plasma import Plasma, PlasmaBuilder
+from bluemira.equilibria.equilibrium import Equilibrium
+from bluemira.geometry.tools import make_polygon
 from EUDEMO_builders.equilibria import EquilibriumDesigner
 from EUDEMO_builders.ivc import design_ivc
 from EUDEMO_builders.reactor.params import EUDEMOReactorParams
@@ -53,6 +56,14 @@ def radial_build(params: _PfT, build_config: Dict) -> _PfT:
     return params
 
 
+def build_plasma(build_config: Dict, eq: Equilibrium) -> Plasma:
+    """Build EUDEMO plasma from an equilibrium."""
+    lcfs_loop = eq.get_LCFS()
+    lcfs_wire = make_polygon({"x": lcfs_loop.x, "z": lcfs_loop.z}, closed=True)
+    builder = PlasmaBuilder(build_config, lcfs_wire)
+    return builder.build()
+
+
 if __name__ == "__main__":
     params = make_parameter_frame(PARAMS_FILE, EUDEMOReactorParams)
     if params is None:
@@ -61,6 +72,9 @@ if __name__ == "__main__":
 
     params = radial_build(params, build_config["Radial build"])
     eq = run_designer(EquilibriumDesigner, params, build_config["Equilibrium"])
+
+    plasma = build_plasma(build_config.get("Plasma", {}), eq)
+
     blanket_face, divertor_face, ivc_boundary = design_ivc(
         params, build_config["IVC"], equilibrium=eq
     )
