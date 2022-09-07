@@ -122,3 +122,11 @@ class EUDEMOReactorParams(ParameterFrame):
 
     # Wall designer
     fw_psi_n: Parameter[float]
+
+    # Divertor silhouette
+    div_type: Parameter[str]
+    div_Ltarg: Parameter[float]  # noqa: N815
+    div_open: Parameter[bool]
+
+    # Plasma face
+    c_rm: Parameter[float]

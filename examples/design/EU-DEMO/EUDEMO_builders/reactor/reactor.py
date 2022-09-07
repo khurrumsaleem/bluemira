@@ -61,6 +61,6 @@ if __name__ == "__main__":
 
     params = radial_build(params, build_config["Radial build"])
     eq = run_designer(EquilibriumDesigner, params, build_config["Equilibrium"])
-    ivc_boundary, plasma_face, ivc_boundary = design_ivc(
+    blanket_face, divertor_face, ivc_boundary = design_ivc(
         params, build_config["IVC"], equilibrium=eq
     )
