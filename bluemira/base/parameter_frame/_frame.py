@@ -113,11 +113,11 @@ class ParameterFrame:
         for field in cls.__dataclass_fields__:
             try:
                 kwargs[field] = getattr(frame, field)
-            except AttributeError:
+            except AttributeError as attr_error:
                 raise ValueError(
-                    f"Cannot create ParameterFrame from other. "
-                    f"Other frame does not contain field '{field}'."
-                )
+                    f"Cannot create '{cls.__name__}' from '{type(frame).__name__}'. "
+                    f"{type(frame).__name__} does not contain field '{field}'."
+                ) from attr_error
         return cls(**kwargs)
 
     @classmethod
