@@ -81,9 +81,9 @@ def get_separatrix_legs(
     return separatrix_legs
 
 
-class DivertorSilhouetteDesigner(Designer[BluemiraWire]):
+class DivertorSilhouetteDesigner(Designer[Tuple[BluemiraWire, ...]]):
     """
-    Designs the divertor silhouette to help design the divertor kepp out zone
+    Designs the divertor silhouette to help design the divertor keep out zone
 
     Parameters
     ----------

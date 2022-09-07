@@ -21,6 +21,7 @@
 """
 Module containing builders for the EUDEMO first wall components
 """
+from bluemira.base.designer import run_designer
 from EUDEMO_builders.ivc.divertor_silhouette import DivertorSilhouetteDesigner
 from EUDEMO_builders.ivc.ivc_boundary import IVCBoundaryDesigner
 from EUDEMO_builders.ivc.plasma_face import PlasmaFaceDesigner
@@ -29,3 +30,27 @@ from EUDEMO_builders.ivc.wall_silhouette_parameterisation import (
     WallPolySpline,
     WallPrincetonD,
 )
+
+
+def design_ivc(params, build_config, equilibrium):
+    """Run the IVC component designers in sequence."""
+    wall_shape = run_designer(
+        WallSilhouetteDesigner,
+        params,
+        build_config["Wall silhouette"],
+        equilibrium=equilibrium,
+    ).create_shape(label="wall")
+    divertor_shapes = run_designer(
+        DivertorSilhouetteDesigner,
+        params,
+        build_config["Divertor silhouette"],
+        wall=wall_shape,
+    )
+    ivc_boundary = IVCBoundaryDesigner(params, wall_shape=wall_shape).execute()
+    plasma_face = PlasmaFaceDesigner(
+        params,
+        ivc_boundary=ivc_boundary,
+        wall_boundary=wall_shape,
+        divertor_silhouette=divertor_shapes,
+    ).execute()
+    return ivc_boundary, plasma_face, ivc_boundary
