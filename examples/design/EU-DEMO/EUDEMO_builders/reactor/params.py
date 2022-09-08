@@ -130,3 +130,7 @@ class EUDEMOReactorParams(ParameterFrame):
 
     # Plasma face
     c_rm: Parameter[float]
+
+    # Vacuum vessel
+    vv_in_off_deg: Parameter[float]
+    vv_out_off_deg: Parameter[float]

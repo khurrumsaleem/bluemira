@@ -44,12 +44,14 @@ from bluemira.base.components import Component
 from bluemira.base.designer import run_designer
 from bluemira.base.parameter_frame import make_parameter_frame
 from bluemira.builders.plasma import Plasma, PlasmaBuilder
+from bluemira.display.displayer import ComponentDisplayer
 from bluemira.equilibria.equilibrium import Equilibrium
 from bluemira.geometry.tools import make_polygon
 from EUDEMO_builders.equilibria import EquilibriumDesigner
 from EUDEMO_builders.ivc import design_ivc
 from EUDEMO_builders.radial_build import radial_build
 from EUDEMO_builders.reactor.params import EUDEMOReactorParams
+from EUDEMO_builders.vacuum_vessel import VacuumVessel, VacuumVesselBuilder
 
 ROOT_DIR = os.path.dirname(__file__)
 PARAMS_FILE = os.path.join(ROOT_DIR, "params.json")
@@ -69,6 +71,12 @@ def build_plasma(build_config: Dict, eq: Equilibrium) -> Plasma:
     return builder.build()
 
 
+def build_vacuum_vessel(params, build_config, ivc_koz) -> VacuumVessel:
+    """Build the vacuum vessel around the given IVC keep-out zone."""
+    vv_builder = VacuumVesselBuilder(params, build_config, ivc_koz)
+    return vv_builder.build()
+
+
 class ReactorError(Exception):
     """Exceptions related to reactors."""
 
@@ -77,6 +85,7 @@ class EUDEMO:
     """EUDEMO reactor definition."""
 
     plasma: Plasma
+    vacuum_vessel: VacuumVessel
 
     def __init__(self, name: str):
         self.name = name
@@ -91,13 +100,16 @@ class EUDEMO:
             try:
                 component_manager = getattr(self, comp_name)
             except AttributeError:
-                raise ReactorError(f"Component not set for '{comp_name}'.")
+                # raise ReactorError(f"Component not set for '{comp_name}'.")
+                continue
+
             component.add_child(component_manager.component())
         return component
 
-    def show_cad(self, **kwargs):
+    def show_cad(self, dim="xyz", **kwargs):
         """Show the CAD build of the reactor."""
-        self.component().show_cad(**kwargs)
+        comp = self.component()
+        ComponentDisplayer().show_cad(comp.get_component(dim, first=False), **kwargs)
 
 
 if __name__ == "__main__":
@@ -115,6 +127,10 @@ if __name__ == "__main__":
 
     blanket_face, divertor_face, ivc_boundary = design_ivc(
         params, build_config["IVC"], equilibrium=eq
+    )
+
+    reactor.vacuum_vessel = build_vacuum_vessel(
+        params, build_config.get("Vacuum vessel", {}), ivc_boundary
     )
 
     reactor.show_cad()
