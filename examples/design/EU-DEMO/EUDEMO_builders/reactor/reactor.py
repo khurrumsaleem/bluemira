@@ -37,8 +37,10 @@ The EUDEMO reactor design routine.
 
 import json
 import os
-from typing import Dict
+from typing import Dict, Type
 
+from bluemira.base.builder import ComponentManager
+from bluemira.base.components import Component
 from bluemira.base.designer import run_designer
 from bluemira.base.parameter_frame import make_parameter_frame
 from bluemira.builders.plasma import Plasma, PlasmaBuilder
@@ -67,17 +69,52 @@ def build_plasma(build_config: Dict, eq: Equilibrium) -> Plasma:
     return builder.build()
 
 
+class ReactorError(Exception):
+    """Exceptions related to reactors."""
+
+
+class EUDEMO:
+    """EUDEMO reactor definition."""
+
+    plasma: Plasma
+
+    def __init__(self, name: str):
+        self.name = name
+
+    def component(self) -> Component:
+        """Return the component tree."""
+        component = Component(self.name)
+        comp_type: Type
+        for comp_name, comp_type in self.__annotations__.items():
+            if not issubclass(comp_type, ComponentManager):
+                continue
+            try:
+                component_manager = getattr(self, comp_name)
+            except AttributeError:
+                raise ReactorError(f"Component not set for '{comp_name}'.")
+            component.add_child(component_manager.component())
+        return component
+
+    def show_cad(self, **kwargs):
+        """Show the CAD build of the reactor."""
+        self.component().show_cad(**kwargs)
+
+
 if __name__ == "__main__":
+    reactor = EUDEMO("EUDEMO")
     params = make_parameter_frame(PARAMS_FILE, EUDEMOReactorParams)
     if params is None:
         raise ValueError("Params cannot be None")
     build_config = _read_json(os.path.join(ROOT_DIR, "build_config.json"))
 
     params = radial_build(params, build_config["Radial build"])
+
     eq = run_designer(EquilibriumDesigner, params, build_config["Equilibrium"])
 
-    plasma = build_plasma(build_config.get("Plasma", {}), eq)
+    reactor.plasma = build_plasma(build_config.get("Plasma", {}), eq)
 
     blanket_face, divertor_face, ivc_boundary = design_ivc(
         params, build_config["IVC"], equilibrium=eq
     )
+
+    reactor.show_cad()
