@@ -1,3 +1,24 @@
+# bluemira is an integrated inter-disciplinary design tool for future fusion
+# reactors. It incorporates several modules, some of which rely on other
+# codes, to carry out a range of typical conceptual fusion reactor design
+# activities.
+#
+# Copyright (C) 2022 M. Coleman, J. Cook, F. Franza, I.A. Maione, S. McIntosh, J. Morris,
+#                    D. Short
+#
+# bluemira is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public
+# License as published by the Free Software Foundation; either
+# version 2.1 of the License, or (at your option) any later version.
+#
+# bluemira is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with bluemira; if not, see <https://www.gnu.org/licenses/>.
+
 """
 The EUDEMO reactor design routine.
 
@@ -16,44 +37,26 @@ The EUDEMO reactor design routine.
 
 import json
 import os
-from typing import Dict, TypeVar
+from typing import Dict
 
 from bluemira.base.designer import run_designer
-from bluemira.base.parameter_frame import NewParameterFrame as ParameterFrame
 from bluemira.base.parameter_frame import make_parameter_frame
 from bluemira.builders.plasma import Plasma, PlasmaBuilder
 from bluemira.equilibria.equilibrium import Equilibrium
 from bluemira.geometry.tools import make_polygon
 from EUDEMO_builders.equilibria import EquilibriumDesigner
 from EUDEMO_builders.ivc import design_ivc
+from EUDEMO_builders.radial_build import radial_build
 from EUDEMO_builders.reactor.params import EUDEMOReactorParams
 
 ROOT_DIR = os.path.dirname(__file__)
 PARAMS_FILE = os.path.join(ROOT_DIR, "params.json")
 
-_PfT = TypeVar("_PfT", bound=ParameterFrame)
 
-
-def read_json(file_path: str) -> Dict:
+def _read_json(file_path: str) -> Dict:
     """Read a JSON file to a dictionary."""
     with open(file_path, "r") as f:
         return json.load(f)
-
-
-def radial_build(params: _PfT, build_config: Dict) -> _PfT:
-    """
-    Update parameters after a radial build is run.
-
-    Usually this would run an external code like PROCESS, but we'll just
-    read in a previous PROCESS run, as the PROCESS solver hasn't yet
-    been made to work with the new ParameterFrame yet.
-    """
-    import json
-
-    with open(os.path.join(ROOT_DIR, "mockPROCESS.json"), "r") as f:
-        param_values = json.load(f)
-    params.update_values(param_values, source="PROCESS (mock)")
-    return params
 
 
 def build_plasma(build_config: Dict, eq: Equilibrium) -> Plasma:
@@ -68,7 +71,7 @@ if __name__ == "__main__":
     params = make_parameter_frame(PARAMS_FILE, EUDEMOReactorParams)
     if params is None:
         raise ValueError("Params cannot be None")
-    build_config = read_json(os.path.join(ROOT_DIR, "build_config.json"))
+    build_config = _read_json(os.path.join(ROOT_DIR, "build_config.json"))
 
     params = radial_build(params, build_config["Radial build"])
     eq = run_designer(EquilibriumDesigner, params, build_config["Equilibrium"])
