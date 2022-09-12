@@ -43,6 +43,7 @@ from bluemira.base.builder import ComponentManager
 from bluemira.base.components import Component
 from bluemira.base.designer import run_designer
 from bluemira.base.parameter_frame import make_parameter_frame
+from bluemira.builders.divertor import Divertor, DivertorBuilder
 from bluemira.builders.plasma import Plasma, PlasmaBuilder
 from bluemira.display.displayer import ComponentDisplayer
 from bluemira.equilibria.equilibrium import Equilibrium
@@ -77,6 +78,12 @@ def build_vacuum_vessel(params, build_config, ivc_koz) -> VacuumVessel:
     return vv_builder.build()
 
 
+def build_divertor(params, build_config, div_silhouette) -> Divertor:
+    """Build the divertor given a silhouette of a sector."""
+    builder = DivertorBuilder(params, build_config, div_silhouette)
+    return builder.build()
+
+
 class ReactorError(Exception):
     """Exceptions related to reactors."""
 
@@ -86,6 +93,7 @@ class EUDEMO:
 
     plasma: Plasma
     vacuum_vessel: VacuumVessel
+    divertor: Divertor
 
     def __init__(self, name: str):
         self.name = name
@@ -129,8 +137,12 @@ if __name__ == "__main__":
         params, build_config["IVC"], equilibrium=eq
     )
 
-    reactor.vacuum_vessel = build_vacuum_vessel(
+    # Do not add VV to the reactor, as the built shape
+    vacuum_vessel = build_vacuum_vessel(
         params, build_config.get("Vacuum vessel", {}), ivc_boundary
+    )
+    reactor.divertor = build_divertor(
+        params, build_config.get("Divertor", {}), divertor_face
     )
 
     reactor.show_cad()

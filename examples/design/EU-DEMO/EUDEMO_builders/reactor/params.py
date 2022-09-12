@@ -134,3 +134,6 @@ class EUDEMOReactorParams(ParameterFrame):
     # Vacuum vessel
     vv_in_off_deg: Parameter[float]
     vv_out_off_deg: Parameter[float]
+
+    # Divertor
+    n_div_cassettes: Parameter[int]

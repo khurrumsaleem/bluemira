@@ -72,7 +72,7 @@ class DivertorBuilder(Builder):
         divertor_silhouette: BluemiraFace,
     ):
         super().__init__(params, build_config)
-        self.div_koz = divertor_silhouette
+        self.divertor_silhouette = divertor_silhouette
 
     def build(self) -> Divertor:
         """
@@ -90,7 +90,7 @@ class DivertorBuilder(Builder):
         """
         Build the x-z components of the divertor.
         """
-        body = PhysicalComponent(self.BODY, self.div_koz)
+        body = PhysicalComponent(self.BODY, self.divertor_silhouette)
         body.plot_options.face_options["color"] = BLUE_PALETTE[self.DIV][0]
 
         return body
@@ -101,7 +101,7 @@ class DivertorBuilder(Builder):
         """
         sector_degree, n_sectors = get_n_sectors(self.params.n_TF.value, degree)
         shapes = pattern_revolved_silhouette(
-            self.div_koz,
+            self.divertor_silhouette,
             self.params.n_div_cassettes.value,
             self.params.n_TF.value,
             self.params.c_rm.value,
