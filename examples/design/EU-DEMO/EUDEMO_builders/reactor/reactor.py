@@ -48,6 +48,7 @@ from bluemira.builders.plasma import Plasma, PlasmaBuilder
 from bluemira.display.displayer import ComponentDisplayer
 from bluemira.equilibria.equilibrium import Equilibrium
 from bluemira.geometry.tools import make_polygon
+from EUDEMO_builders.blanket import Blanket, BlanketBuilder
 from EUDEMO_builders.equilibria import EquilibriumDesigner
 from EUDEMO_builders.ivc import design_ivc
 from EUDEMO_builders.radial_build import radial_build
@@ -84,6 +85,12 @@ def build_divertor(params, build_config, div_silhouette) -> Divertor:
     return builder.build()
 
 
+def build_blanket(params, build_config, blanket_face) -> Blanket:
+    """Build the blanket given a silhouette of a sector."""
+    builder = BlanketBuilder(params, build_config, blanket_face)
+    return builder.build()
+
+
 class ReactorError(Exception):
     """Exceptions related to reactors."""
 
@@ -94,6 +101,7 @@ class EUDEMO:
     plasma: Plasma
     vacuum_vessel: VacuumVessel
     divertor: Divertor
+    blanket: Blanket
 
     def __init__(self, name: str):
         self.name = name
@@ -137,12 +145,16 @@ if __name__ == "__main__":
         params, build_config["IVC"], equilibrium=eq
     )
 
-    # Do not add VV to the reactor, as the built shape
+    # Do not add VV to the reactor, as the built shape error when
+    # displayed (cannot build face from wire).
     vacuum_vessel = build_vacuum_vessel(
         params, build_config.get("Vacuum vessel", {}), ivc_boundary
     )
     reactor.divertor = build_divertor(
         params, build_config.get("Divertor", {}), divertor_face
+    )
+    reactor.blanket = build_blanket(
+        params, build_config.get("Blanket", {}), blanket_face
     )
 
     reactor.show_cad()

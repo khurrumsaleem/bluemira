@@ -137,3 +137,7 @@ class EUDEMOReactorParams(ParameterFrame):
 
     # Divertor
     n_div_cassettes: Parameter[int]
+
+    # Blanket
+    n_bb_inboard: Parameter[int]
+    n_bb_outboard: Parameter[int]
