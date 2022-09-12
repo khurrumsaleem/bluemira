@@ -45,6 +45,7 @@ from bluemira.base.designer import run_designer
 from bluemira.base.parameter_frame import make_parameter_frame
 from bluemira.builders.divertor import Divertor, DivertorBuilder
 from bluemira.builders.plasma import Plasma, PlasmaBuilder
+from bluemira.builders.thermal_shield import VVTSBuilder
 from bluemira.display.displayer import ComponentDisplayer
 from bluemira.equilibria.equilibrium import Equilibrium
 from bluemira.geometry.tools import make_polygon
@@ -155,6 +156,13 @@ if __name__ == "__main__":
     )
     reactor.blanket = build_blanket(
         params, build_config.get("Blanket", {}), blanket_face
+    )
+
+    thermal_shield_config = build_config.get("Thermal shield", {})
+    vv_thermal_shield = VVTSBuilder(
+        params,
+        thermal_shield_config.get("Vacuum vessel", {}),
+        keep_out_zone=vacuum_vessel.xz_boundary(),
     )
 
     reactor.show_cad()

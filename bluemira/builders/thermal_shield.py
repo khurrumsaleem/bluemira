@@ -73,7 +73,7 @@ class VVTSBuilder(Builder):
 
     def __init__(
         self,
-        params: Union[VVTSBuilderParams, Dict],
+        params: Union[ParameterFrame, Dict],
         build_config: Dict,
         keep_out_zone: BluemiraWire,
     ):
