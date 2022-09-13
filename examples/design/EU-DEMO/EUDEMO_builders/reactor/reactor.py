@@ -37,16 +37,14 @@ The EUDEMO reactor design routine.
 
 import json
 import os
-from typing import Dict, Type
+from typing import Dict
 
-from bluemira.base.builder import ComponentManager
-from bluemira.base.components import Component
 from bluemira.base.designer import run_designer
 from bluemira.base.parameter_frame import make_parameter_frame
+from bluemira.base.reactor import Reactor
 from bluemira.builders.divertor import Divertor, DivertorBuilder
 from bluemira.builders.plasma import Plasma, PlasmaBuilder
 from bluemira.builders.thermal_shield import VVTSBuilder
-from bluemira.display.displayer import ComponentDisplayer
 from bluemira.equilibria.equilibrium import Equilibrium
 from bluemira.geometry.tools import make_polygon
 from EUDEMO_builders.blanket import Blanket, BlanketBuilder
@@ -60,10 +58,13 @@ ROOT_DIR = os.path.dirname(__file__)
 PARAMS_FILE = os.path.join(ROOT_DIR, "params.json")
 
 
-def _read_json(file_path: str) -> Dict:
-    """Read a JSON file to a dictionary."""
-    with open(file_path, "r") as f:
-        return json.load(f)
+class EUDEMO(Reactor):
+    """EUDEMO reactor definition."""
+
+    plasma: Plasma
+    vacuum_vessel: VacuumVessel
+    divertor: Divertor
+    blanket: Blanket
 
 
 def build_plasma(build_config: Dict, eq: Equilibrium) -> Plasma:
@@ -92,41 +93,10 @@ def build_blanket(params, build_config, blanket_face) -> Blanket:
     return builder.build()
 
 
-class ReactorError(Exception):
-    """Exceptions related to reactors."""
-
-
-class EUDEMO:
-    """EUDEMO reactor definition."""
-
-    plasma: Plasma
-    vacuum_vessel: VacuumVessel
-    divertor: Divertor
-    blanket: Blanket
-
-    def __init__(self, name: str):
-        self.name = name
-
-    def component(self) -> Component:
-        """Return the component tree."""
-        component = Component(self.name)
-        comp_type: Type
-        for comp_name, comp_type in self.__annotations__.items():
-            if not issubclass(comp_type, ComponentManager):
-                continue
-            try:
-                component_manager = getattr(self, comp_name)
-            except AttributeError:
-                # raise ReactorError(f"Component not set for '{comp_name}'.")
-                continue
-
-            component.add_child(component_manager.component())
-        return component
-
-    def show_cad(self, dim="xyz", **kwargs):
-        """Show the CAD build of the reactor."""
-        comp = self.component()
-        ComponentDisplayer().show_cad(comp.get_component(dim, first=False), **kwargs)
+def _read_json(file_path: str) -> Dict:
+    """Read a JSON file to a dictionary."""
+    with open(file_path, "r") as f:
+        return json.load(f)
 
 
 if __name__ == "__main__":
