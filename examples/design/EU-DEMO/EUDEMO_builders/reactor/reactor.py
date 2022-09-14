@@ -30,7 +30,7 @@ The EUDEMO reactor design routine.
 6. Build TF coils
 7. Build PF coils
 8. Build cryo thermal shield
-9. Build cyostat
+9. Build cryostat
 10. Build radiation shield
 11. Produce power cycle report
 """
