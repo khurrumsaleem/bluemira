@@ -21,7 +21,7 @@
 
 import os
 
-import dolfin
+import dolfinx
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -99,7 +99,7 @@ class TestGetNormal:
             subdomains=True,
         )
 
-        dolfin.plot(mesh)
+        dolfinx.plot(mesh)
         plt.show()
 
         em_solver = FemMagnetostatic2d(3)

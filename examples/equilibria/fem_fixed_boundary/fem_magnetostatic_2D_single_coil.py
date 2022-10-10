@@ -38,7 +38,7 @@ Application of the dolfin fem 2D magnetostatic to a single coil problem
 # %%
 import os
 
-import dolfin
+import dolfinx
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -133,7 +133,7 @@ mesh, boundaries, subdomains, labels = import_mesh(
     directory=directory,
     subdomains=True,
 )
-dolfin.plot(mesh)
+dolfinx.plot(mesh)
 plt.show()
 
 # %%[markdown]
@@ -167,10 +167,10 @@ jtot = ScalarSubFunc(functions, markers, subdomains)
 
 # %%
 
-f_space = dolfin.FunctionSpace(mesh, "DG", 0)
-f = dolfin.Function(f_space)
+f_space = dolfinx.fem.FunctionSpace(mesh, "DG", 0)
+f = dolfinx.fem.Function(f_space)
 f.interpolate(jtot)
-dolfin.plot(f, title="Source term")
+dolfinx.plot(f, title="Source term")
 plt.show()
 
 # %%[markdown]

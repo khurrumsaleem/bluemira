@@ -23,7 +23,7 @@
 
 from typing import Callable, Iterable, List, Optional, Tuple, Union
 
-import dolfin
+import dolfinx
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy
@@ -51,7 +51,7 @@ def _convert_const_to_dolfin(value: float):
     if not isinstance(value, (int, float)):
         raise ValueError("Value must be integer or float.")
 
-    return dolfin.Constant(value)
+    return dolfinx.fem.Constant(value)
 
 
 class ScalarSubFunc(dolfin.UserExpression):
@@ -247,7 +247,7 @@ def calculate_plasma_shape_params(
     ----------
     psi_norm_func: Callable
         Function to calculate normalised psi
-    mesh: dolfin.Mesh
+    mesh: dolfinx.mesh.Mesh
         Mesh object to use to estimate extrema prior to optimisation
     psi_norm: float
         Normalised psi value for which to calculate the shape parameters

@@ -19,6 +19,7 @@
 # You should have received a copy of the GNU Lesser General Public
 # License along with bluemira; if not, see <https://www.gnu.org/licenses/>.
 
+import dolfinx
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -33,8 +34,6 @@ from bluemira.geometry.tools import interpolate_bspline
 from bluemira.geometry.wire import BluemiraWire
 from bluemira.mesh import meshing
 from bluemira.mesh.tools import import_mesh, msh_to_xdmf
-
-import dolfin  # isort:skip
 
 
 class TestSolovev:
@@ -112,7 +111,7 @@ class TestSolovev:
             subdomains=True,
         )
 
-        dolfin.plot(mesh)
+        dolfinx.plot(mesh)
         plt.show()
 
         # initialize the Grad-Shafranov solver
@@ -121,7 +120,7 @@ class TestSolovev:
         gs_solver.set_mesh(mesh, boundaries)
 
         # Set the right hand side of the Grad-Shafranov equation, as a function of psi
-        g = dolfin.Expression(
+        g = dolfinx.fem.Expression(
             "1/mu0*(-x[0]*A1 + A2/x[0])",
             A1=solovev.A1,
             A2=solovev.A2,

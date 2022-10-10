@@ -26,6 +26,7 @@ Example on the application of the GS solver for a Johner plasma parametrization
 # %%
 import os
 
+import dolfinx
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -39,8 +40,6 @@ from bluemira.equilibria.shapes import JohnerLCFS
 from bluemira.geometry.face import BluemiraFace
 from bluemira.mesh import meshing
 from bluemira.mesh.tools import import_mesh, msh_to_xdmf
-
-import dolfin  # isort:skip
 
 # %%[markdown]
 # # Create a plasma shape
@@ -76,7 +75,7 @@ mesh, boundaries, subdomains, labels = import_mesh(
     directory=directory,
     subdomains=True,
 )
-dolfin.plot(mesh)
+dolfinx.plot(mesh)
 plt.show()
 
 Ic = 18e6
