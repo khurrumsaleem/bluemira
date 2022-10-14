@@ -16,5 +16,3 @@ source ~/.miniforge-init.sh
 mamba env create -f conda/environment.yml
 conda activate bluemira
 
-# Install bluemira
-python -m pip install --no-cache-dir -e .
