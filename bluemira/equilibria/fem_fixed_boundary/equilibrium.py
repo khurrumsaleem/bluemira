@@ -101,6 +101,24 @@ class TransportSolverParams(ParameterFrame):
     f_ni: Parameter[float]
 
 
+@dataclass
+class TransportSolverParams(ParameterFrame):
+    """Transport Solver ParameterFrame"""
+
+    A: Parameter[float]
+    R_0: Parameter[float]
+    I_p: Parameter[float]
+    B_0: Parameter[float]
+    V_p: Parameter[float]
+    v_burn: Parameter[float]
+    kappa_95: Parameter[float]
+    delta_95: Parameter[float]
+    delta: Parameter[float]
+    kappa: Parameter[float]
+    q_95: Parameter[float]
+    f_ni: Parameter[float]
+
+
 def _interpolate_profile(
     x: np.ndarray, profile_data: np.ndarray
 ) -> Callable[[np.ndarray], np.ndarray]:
