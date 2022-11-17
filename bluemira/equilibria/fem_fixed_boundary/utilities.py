@@ -54,7 +54,7 @@ def _convert_const_to_dolfin(value: float):
     return dolfinx.fem.Constant(value)
 
 
-class ScalarSubFunc(dolfin.UserExpression):
+class ScalarSubFunc:
     """
     Create a dolfin UserExpression from a set of functions defined in the subdomains
 
@@ -75,7 +75,7 @@ class ScalarSubFunc(dolfin.UserExpression):
         self,
         func_list: Union[Iterable[Union[float, Callable]], float, Callable],
         mark_list: Optional[Iterable[int]] = None,
-        subdomains: Optional[dolfin.cpp.mesh.MeshFunctionSizet] = None,
+        subdomains: Optional[dolfinx.cpp.mesh.MeshFunctionSizet] = None,
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -235,7 +235,7 @@ def get_tricontours(
 
 def calculate_plasma_shape_params(
     psi_norm_func: Callable[[np.ndarray], np.ndarray],
-    mesh: dolfin.Mesh,
+    mesh: dolfinx.Mesh,
     psi_norm: float,
     plot: bool = False,
 ) -> Tuple[float, float, float]:
@@ -314,7 +314,7 @@ def calculate_plasma_shape_params(
 
     if plot:
         _, ax = plt.subplots()
-        dolfin.plot(mesh)
+        dolfinx.plot(mesh)
         ax.tricontour(points[:, 0], points[:, 1], psi_norm_array)
         ax.plot(x, z, color="r")
         ax.plot(*po, marker="o", color="r")

@@ -32,10 +32,10 @@ from typing import Tuple, Union
 
 import meshio
 import numpy as np
-from dolfin import MeshValueCollection
-from dolfin.cpp.mesh import MeshFunctionSizet
-from dolfinx.io import XDMFFile
-from dolfinx.mesh import Mesh, XDMFFile
+
+import dolfinx
+from mpi4py import MPI
+
 from tabulate import tabulate
 
 from bluemira.base.look_and_feel import bluemira_debug, bluemira_warn
@@ -137,26 +137,7 @@ def import_mesh(file_prefix="mesh", subdomains=False, directory="."):
         msg = "\n".join([fn for fn, exist in zip(files, exists) if not exist])
         raise MeshConversionError(f"No mesh file(s) found:\n {msg}")
 
-    mesh = Mesh()
-
-    with XDMFFile(domain_file) as file:
-        file.read(mesh)
-
-    dimension = mesh.topology().dim()
-    boundaries_mvc = MeshValueCollection("size_t", mesh, dim=dimension)
-
-    with XDMFFile(boundary_file) as file:
-        file.read(boundaries_mvc, "boundaries")
-
-    boundaries_mf = MeshFunctionSizet(mesh, boundaries_mvc)
-
-    if subdomains:
-        subdomains_mvc = MeshValueCollection("size_t", mesh, dim=dimension)
-        with XDMFFile(domain_file) as file:
-            file.read(subdomains_mvc, "subdomains")
-        subdomains_mf = MeshFunctionSizet(mesh, subdomains_mvc)
-    else:
-        subdomains_mf = None
+    mesh, boundaries_mf, subdomains_mf = dolfinx.io.gmshio.read_from_msh("Mesh.msh", MPI.COMM_WORLD, 0)
 
     with open(link_file, "r") as file:
         link_dict = json.load(file)

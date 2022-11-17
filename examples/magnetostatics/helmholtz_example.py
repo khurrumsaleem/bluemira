@@ -195,7 +195,10 @@ def plot_cage_results(cage, xz_fields, xy_fields):
 
 
 # Plot the two cages and the results in the two planes
+# import matplotlib
+# matplotlib.use('agg')
 plot_cage_results(analytical_tf_cage1, analytical_xz_fields, analytical_xy_fields)
 plot_cage_results(analytical_tf_cage2, analytical_xz_fields2, analytical_xy_fields2)
 plot_cage_results(biotsavart_tf_cage, biotsavart_xz_fields, biotsavart_xy_fields)
 plt.show()
+# plt.savefig('image1.png')

@@ -36,6 +36,10 @@ import gmsh
 from bluemira.base.look_and_feel import bluemira_print
 from bluemira.mesh.error import MeshOptionsError
 
+from dolfinx.io import XDMFFile, gmshio
+
+from mpi4py import MPI
+
 # import bluemira modules
 
 
@@ -210,6 +214,18 @@ class Mesh:
             # save the mesh file
             for file in self.meshfile:
                 _FreeCADGmsh._save_mesh(file)
+
+            # msh, cell_markers, facet_markers = gmshio.model_to_mesh(gmsh.model, MPI.COMM_SELF, 0)
+            # msh.name = "Sphere"
+            # cell_markers.name = f"{msh.name}_cells"
+            # facet_markers.name = f"{msh.name}_facets"
+            #
+            # with XDMFFile(msh.comm, f"out_gmsh/mesh_rank_{MPI.COMM_WORLD.rank}.xdmf", "w") as file:
+            #     file.write_mesh(msh)
+            #     file.write_meshtags(cell_markers)
+            #     msh.topology.create_connectivity(msh.topology.dim - 1, msh.topology.dim)
+            #     file.write_meshtags(facet_markers)
+            #     file.parameters['flush_output'] = True
 
             # close gmsh
             _FreeCADGmsh._finalize_mesh(self.logfile)

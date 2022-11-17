@@ -92,13 +92,13 @@ class FemMagnetostatic2d:
         # define boundaries
         if boundaries is None:
             # initialize the MeshFunction
-            self.boundaries = dolfin.MeshFunction(
+            self.boundaries = dolfinx.MeshFunction(
                 "size_t", mesh, mesh.topology().dim() - 1
             )
         elif isinstance(boundaries, str):
             # check wether boundaries is a filename or a MeshFunction,
             # then load it or use it
-            self.boundaries = dolfin.MeshFunction(
+            self.boundaries = dolfinx.MeshFunction(
                 "size_t", self.mesh, boundaries
             )  # define the boundaries
         else:
@@ -195,7 +195,7 @@ class FemMagnetostatic2d:
         # return the solution
         return self.psi
 
-    def calculate_b(self) -> dolfin.Function:
+    def calculate_b(self) -> dolfinx.Function:
         """
         Calculates the magnetic field intensity from psi
 
