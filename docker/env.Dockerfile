@@ -20,26 +20,23 @@ WORKDIR /opt/bluemira
 
 # Build and install Qt5 (5.15.5)
 FROM base as build_deps
+
+# Build and install freecad (0.20.0)
+COPY scripts/freecad/step1 ./scripts/freecad/step1
+RUN bash scripts/freecad/step1/install-freecad-deps.sh \
+    && bash scripts/freecad/step1/clone-freecad.sh
+
 COPY scripts/qt5/step1 ./scripts/qt5/step1
-RUN bash scripts/qt5/step1/install-qt5-deps.sh \
-    && bash scripts/qt5/step1/build-qt5.sh
+RUN bash scripts/qt5/step1/install-qt5-deps.sh
+RUN python3 -m pip install --upgrade pip setuptools wheel packaging pybind11-global
+RUN apt-get install -y qtbase5-dev qt5-qmake libqt5xmlpatterns5-dev libcoin-dev libqt5svg5-dev qttools5-dev libqt5x11extras5-dev qtbase5-private-dev qttranslations5-l10n
 
-COPY scripts/qt5/step2 ./scripts/qt5/step2
-RUN bash scripts/qt5/step2/build-qt5-2.sh \
-    && bash scripts/qt5/step2/install-qt5.sh
-
-# Build and install PySide2 and shiboken (5.15.2.1)
+# Build Pyside2
 COPY scripts/pyside2/clone-pyside2.sh ./scripts/pyside2/clone-pyside2.sh
 RUN bash scripts/pyside2/clone-pyside2.sh
 
 COPY scripts/pyside2/install-pyside2.sh ./scripts/pyside2/install-pyside2.sh
 RUN bash scripts/pyside2/install-pyside2.sh
-
-# Build and install coin (4.0.0)
-COPY scripts/coin/ ./scripts/coin/
-RUN bash scripts/coin/install-coin-deps.sh \
-    && bash scripts/coin/build-coin.sh \
-    && bash scripts/coin/install-coin.sh
 
 # Build and install pivy (0.6.7)
 COPY scripts/pivy/step1 ./scripts/pivy/step1
@@ -49,13 +46,6 @@ RUN bash scripts/pivy/step1/clone_pivy.sh && \
 # Build and install pivy (0.6.7)
 COPY scripts/pivy/step2 ./scripts/pivy/step2
 RUN bash scripts/pivy/step2/install-pivy.sh
-
-# Build and install freecad (0.20.0)
-COPY scripts/freecad/step1 ./scripts/freecad/step1
-RUN bash scripts/freecad/step1/install-freecad-deps.sh \
-    && bash scripts/freecad/step1/clone-freecad.sh
-
-RUN python -m pip install --upgrade pip setuptools wheel pybind11-global
 
 COPY scripts/freecad/install-freecad.sh ./scripts/freecad/install-freecad.sh
 RUN bash scripts/freecad/install-freecad.sh
@@ -74,10 +64,6 @@ RUN bash scripts/fenicsx/install-fenicsx.sh
 FROM base as release
 COPY --from=build_deps /usr /usr
 COPY --from=build_deps /etc /etc
-
-# QT5 has some not standard lib locations
-# which freecad install doesnt remember
-ENV LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/Qt-5.15.5/lib
 
 RUN useradd -ms /bin/bash user
 COPY --from=build_deps --chown=user /opt/venv/ /opt/venv/
