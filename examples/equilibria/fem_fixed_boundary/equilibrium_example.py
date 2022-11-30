@@ -153,5 +153,5 @@ solve_transport_fixed_boundary(
     max_iter=15,
     iter_err_max=1e-4,
     relaxation=0.0,
-    plot=False,
+    plot=True,
 )
