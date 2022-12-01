@@ -345,38 +345,6 @@ class FemGradShafranovFixedBoundary(FemMagnetostatic2d):
         if self._curr_target:
             self.k = self._curr_target / self._calculate_curr_tot()
 
-    def _plot_current_iteration(
-        self, ax, i_iter: int, points: Iterable, prev: Optional[np.ndarray] = None
-    ):
-        self._plot_array(
-            ax[0],
-            points,
-            np.array([self._g_func(p) for p in points]),
-            f"J current at iteration {i_iter}",
-            contour=False,
-        )
-        if prev is not None:
-            self._plot_array(
-                ax[1],
-                points,
-                prev,
-                f"Normalized magnetic coordinate at iteration {i_iter}",
-            )
-
-    def _plot_array(
-        self, ax, points: np.ndarray, array: np.ndarray, title: str, contour: bool = True
-    ):
-        ax, _, _ = plot_scalar_field(
-            points[:, 0],
-            points[:, 1],
-            array,
-            levels=20,
-            ax=ax,
-            tofill=True,
-            contour=contour,
-        )
-        ax.set_title(title)
-
     def solve(
         self,
         dirichlet_bc_function: Optional[
@@ -385,6 +353,7 @@ class FemGradShafranovFixedBoundary(FemMagnetostatic2d):
         dirichlet_marker: Optional[int] = None,
         neumann_bc_function: Optional[Union[dolfin.Expression, dolfin.Function]] = None,
         plot: bool = False,
+        debug: bool = False,
     ) -> dolfin.Function:
         """
         Solve the G-S problem.
@@ -410,8 +379,7 @@ class FemGradShafranovFixedBoundary(FemMagnetostatic2d):
         points = self.mesh.coordinates()
 
         if plot:
-            f, ax = plt.subplots(1, 3)
-            self._plot_current_iteration(ax, 0, points)
+            f, ax, cax = self._setup_plot()
 
         super().solve(dirichlet_bc_function, dirichlet_marker, neumann_bc_function)
         self._update_curr()
@@ -426,11 +394,9 @@ class FemGradShafranovFixedBoundary(FemMagnetostatic2d):
             diff = new - prev
 
             if plot:
-                for a in ax:
-                    a.clear()
-                plt.pause(0.001)
-                self._plot_current_iteration(ax, i, points, prev)
-                self._plot_array(ax[2], points, diff, f"G-S error at iteration {i}")
+                self._plot_current_iteration(f, ax, cax, i, points, prev)
+
+                # self._plot_array(ax[2], points, diff, f"G-S error at iteration {i}")
 
             eps = np.linalg.norm(diff, ord=2) / np.linalg.norm(new, ord=2)
 
@@ -448,47 +414,164 @@ class FemGradShafranovFixedBoundary(FemMagnetostatic2d):
             if eps < self.iter_err_max:
                 break
 
+        if plot:
+            plt.close(f)
+
         return self.psi
 
+    def _setup_plot(self):
+        fig, ax = plt.subplots(1, 2, figsize=(18, 10))
+        plt.subplots_adjust(wspace=0.5)
+        for axis in ax:
+            axis.set_xlabel("x")
+            axis.set_ylabel("z")
+            axis.set_aspect("equal")
 
-import time
+        cax = []
+        for axis in ax:
+            divider = make_axes_locatable(axis)
+            cax.append(divider.append_axes("right", size="10%", pad=0.1))
 
-import matplotlib.pyplot as plt
-import numpy as np
+        return fig, ax, cax
+
+    def _plot_current_iteration(
+        self, f, ax, cax, i_iter: int, points: Iterable, prev: np.ndarray
+    ):
+        for axis in ax:
+            axis.clear()
+        self._plot_array(
+            ax[0],
+            cax[0],
+            points,
+            np.array([self._g_func(p) for p in points]),
+            f"J current at iteration {i_iter}",
+            contour=False,
+        )
+        self._plot_array(
+            ax[1],
+            cax[1],
+            points,
+            prev,
+            f"Normalized magnetic coordinate at iteration {i_iter}",
+        )
+        plt.pause(0.001)
+
+    def _plot_array(
+        self,
+        ax,
+        cax,
+        points: np.ndarray,
+        array: np.ndarray,
+        title: str,
+        contour: bool = True,
+    ):
+        cm = ax.tricontourf(points[:, 0], points[:, 1], array)
+
+        if contour:
+            ax.tricontour(points[:, 0], points[:, 1], array)
+
+        add_colorbar(cm, cax)
+
+        ax.set_title(title)
+
+
+# import time
+
+# import matplotlib.pyplot as plt
+# import numpy as np
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-
-def run():
-    v = 1 + abs(np.random.rand())
-    data1 = v * (xx + v * zz)
-    data2 = v * (xx * zz * v)
-    data3 = v * np.hypot(xx, v * zz)
-    return data1, data2, data3
-
-
-x = np.linspace(1, 10, 50)
-z = np.linspace(-10, 10, 100)
-xx, zz = np.meshgrid(x, z)
-fig, ax = plt.subplots(1, 3, figsize=(18, 10))
-plt.subplots_adjust(wspace=0.5)
-for axis in ax:
-    axis.set_xlabel("x")
-    axis.set_ylabel("z")
-    axis.set_aspect("equal")
-
-cax = []
-for axis in ax:
-    divider = make_axes_locatable(axis)
-    cax.append(divider.append_axes("right", size="10%", pad=0.1))
+# def run():
+#     v = 1 + abs(np.random.rand())
+#     data1 = v * (xx + v * zz)
+#     data2 = v * (xx * zz * v)
+#     data3 = v * np.hypot(xx, v * zz)
+#     return data1, data2, data3
 
 
-def update_fig(data1, data2, data3):
-    for axis in ax:
-        axis.clear()
+# x = np.linspace(1, 10, 50)
+# z = np.linspace(-10, 10, 100)
+# xx, zz = np.meshgrid(x, z)
+# fig, ax = plt.subplots(1, 3, figsize=(18, 10))
+# plt.subplots_adjust(wspace=0.5)
+# for axis in ax:
+#     axis.set_xlabel("x")
+#     axis.set_ylabel("z")
+#     axis.set_aspect("equal")
 
-    for axis, data, ca in zip(ax, [data1, data2, data3], cax):
-        im1 = axis.contourf(xx, zz, data, cmap="bone")
-        add_colorbar(im1, ca)
+# cax = []
+# for axis in ax:
+#     divider = make_axes_locatable(axis)
+#     cax.append(divider.append_axes("right", size="10%", pad=0.1))
+
+
+# def update_fig(data1, data2, data3):
+#     for axis in ax:
+#         axis.clear()
+
+#     for axis, data, ca in zip(ax, [data1, data2, data3], cax):
+#         im1 = axis.contourf(xx, zz, data, cmap="bone")
+#         add_colorbar(im1, ca)
+
+
+# def add_colorbar(mappable, ca):
+#     last_axes = plt.gca()
+#     ax = mappable.axes
+#     fig = ax.figure
+#     cbar = fig.colorbar(mappable, cax=ca)
+#     plt.sca(last_axes)
+#     return cbar
+
+
+# for i in range(5):
+#     data1, data2, data3 = run()
+#     time.sleep(1)
+#     update_fig(data1, data2, data3)
+#     plt.pause(0.001)
+
+# plt.close()
+
+
+# import time
+
+# import matplotlib.pyplot as plt
+# import numpy as np
+# from mpl_toolkits.axes_grid1 import make_axes_locatable
+
+
+# def run():
+#     v = 1 + abs(np.random.rand())
+#     data1 = v * (xx + v * zz)
+#     data2 = v * (xx * zz * v)
+#     data3 = v * np.hypot(xx, v * zz)
+#     return data1, data2, data3
+
+
+# x = np.linspace(1, 10, 50)
+# z = np.linspace(-10, 10, 100)
+# xx, zz = np.meshgrid(x, z)
+# fig, ax = plt.subplots(1, 3, figsize=(18, 10))
+# plt.subplots_adjust(wspace=0.5)
+
+# for axis in ax:
+#     axis.set_xlabel("x")
+#     axis.set_ylabel("z")
+#     axis.set_aspect("equal")
+
+
+# cax = []
+# for axis in ax:
+#     divider = make_axes_locatable(axis)
+#     cax.append(divider.append_axes("right", size="10%", pad=0.1))
+
+
+# def update_fig(data1, data2, data3):
+#     for axis in ax:
+#         axis.clear()
+
+#     for axis, data, ca in zip(ax, [data1, data2, data3], cax):
+#         im1 = axis.contourf(xx, zz, data, cmap="bone")
+#         add_colorbar(im1, ca)
 
 
 def add_colorbar(mappable, ca):
@@ -500,70 +583,10 @@ def add_colorbar(mappable, ca):
     return cbar
 
 
-for i in range(5):
-    data1, data2, data3 = run()
-    time.sleep(1)
-    update_fig(data1, data2, data3)
-    plt.pause(0.001)
+# for i in range(5):
+#     data1, data2, data3 = run()
+#     time.sleep(1)
+#     update_fig(data1, data2, data3)
+#     plt.pause(0.001)
 
-plt.close()
-
-
-import time
-
-import matplotlib.pyplot as plt
-import numpy as np
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-
-
-def run():
-    v = 1 + abs(np.random.rand())
-    data1 = v * (xx + v * zz)
-    data2 = v * (xx * zz * v)
-    data3 = v * np.hypot(xx, v * zz)
-    return data1, data2, data3
-
-
-x = np.linspace(1, 10, 50)
-z = np.linspace(-10, 10, 100)
-xx, zz = np.meshgrid(x, z)
-fig, ax = plt.subplots(1, 3, figsize=(18, 10))
-plt.subplots_adjust(wspace=0.5)
-
-for axis in ax:
-    axis.set_xlabel("x")
-    axis.set_ylabel("z")
-    axis.set_aspect("equal")
-
-
-cax = []
-for axis in ax:
-    divider = make_axes_locatable(axis)
-    cax.append(divider.append_axes("right", size="10%", pad=0.1))
-
-
-def update_fig(data1, data2, data3):
-    for axis in ax:
-        axis.clear()
-
-    for axis, data, ca in zip(ax, [data1, data2, data3], cax):
-        im1 = axis.contourf(xx, zz, data, cmap="bone")
-        add_colorbar(im1, ca)
-
-
-def add_colorbar(mappable, ca):
-    last_axes = plt.gca()
-    ax = mappable.axes
-    fig = ax.figure
-    cbar = fig.colorbar(mappable, cax=ca)
-    plt.sca(last_axes)
-    return cbar
-
-
-for i in range(5):
-    data1, data2, data3 = run()
-    time.sleep(1)
-    update_fig(data1, data2, data3)
-    plt.pause(0.001)
-
-plt.close()
+# plt.close()
