@@ -482,7 +482,7 @@ class FemGradShafranovFixedBoundary(FemMagnetostatic2d):
             ax[1],
             points,
             prev,
-            f"({i_iter})" + "$\\Psi_{n}$",
+            f"({i_iter}) " + "$\\Psi_{n}$",
             PLOT_DEFAULTS["psi"]["cmap"],
             levels,
         )
@@ -493,7 +493,7 @@ class FemGradShafranovFixedBoundary(FemMagnetostatic2d):
                 ax[2],
                 points,
                 100 * diff,
-                f"({i_iter})" + "$\\Psi_{n}$ error",
+                f"({i_iter}) " + "$\\Psi_{n}$ error",
                 "seismic",
             )
             self._add_colorbar(cm, cax[2], "%")
