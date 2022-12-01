@@ -33,6 +33,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from bluemira.base.constants import MU_0
 from bluemira.base.file import try_get_bluemira_path
 from bluemira.base.look_and_feel import bluemira_print_flush
+from bluemira.display import plot_defaults
 from bluemira.equilibria.constants import DPI_GIF, PLT_PAUSE
 from bluemira.equilibria.fem_fixed_boundary.utilities import (
     ScalarSubFunc,
@@ -391,6 +392,7 @@ class FemGradShafranovFixedBoundary(FemMagnetostatic2d):
         super().solve(dirichlet_bc_function, dirichlet_marker, neumann_bc_function)
 
         if plot:
+            plot_defaults()
             f, ax, cax = self._setup_plot(debug)
 
         self._update_curr()
@@ -522,6 +524,6 @@ class FemGradShafranovFixedBoundary(FemMagnetostatic2d):
         last_axes = plt.gca()
         ax = cm.axes
         fig = ax.figure
-        cb = fig.colorbar(cm, cax=cax)
+        fig.colorbar(cm, cax=cax)
         cax.set_title(title)
         plt.sca(last_axes)
