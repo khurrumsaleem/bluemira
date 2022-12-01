@@ -390,12 +390,12 @@ class FemGradShafranovFixedBoundary(FemMagnetostatic2d):
 
         super().solve(dirichlet_bc_function, dirichlet_marker, neumann_bc_function)
 
-        diff = np.zeros(len(points))
         if plot:
             f, ax, cax = self._setup_plot(debug)
-            # self._plot_current_iteration(f, ax, cax, 0, points, diff, diff, debug)
+
         self._update_curr()
 
+        diff = np.zeros(len(points))
         for i in range(1, self.max_iter + 1):
             prev_psi = self.psi.vector()[:]
             prev = np.array([self.psi_norm_2d(p) for p in points])
@@ -477,19 +477,16 @@ class FemGradShafranovFixedBoundary(FemMagnetostatic2d):
         )
         self._add_colorbar(cm, cax[0], "A/m$^{2}$\n")
 
-        levels = np.linspace(0, 1, 20)
+        levels = np.linspace(0, 1, 11)
         cm = self._plot_array(
             ax[1],
             points,
             prev,
             f"({i_iter})" + "$\\Psi_{n}$",
             PLOT_DEFAULTS["psi"]["cmap"],
-            levels=levels,
+            levels,
         )
-        cb = self._add_colorbar(cm, cax[1], "")
-        cb.ax.locator_params(nbins=9)
-        cb.update_ticks()
-        # cb.set_ticks(np.linspace(0, 1, 9))
+        self._add_colorbar(cm, cax[1], "")
 
         if debug:
             cm = self._plot_array(
@@ -528,4 +525,3 @@ class FemGradShafranovFixedBoundary(FemMagnetostatic2d):
         cb = fig.colorbar(cm, cax=cax)
         cax.set_title(title)
         plt.sca(last_axes)
-        return cb
