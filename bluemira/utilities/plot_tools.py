@@ -24,6 +24,7 @@ A collection of plotting tools.
 """
 
 import os
+import re
 from typing import Union
 
 import imageio
@@ -116,7 +117,7 @@ def make_gif(folder, figname, formatt="png", clean=True):
             if filename.endswith(formatt):
                 fp = os.path.join(folder, filename)
                 ims.append(fp)
-    ims = sorted(ims)
+    ims = sorted(ims, key=lambda x: int(re.sub("\D", "", x)))
     images = [imageio.imread(fp) for fp in ims]
     if clean:
         for fp in ims:

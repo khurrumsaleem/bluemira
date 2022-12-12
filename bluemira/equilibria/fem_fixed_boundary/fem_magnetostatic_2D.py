@@ -360,6 +360,7 @@ class FemGradShafranovFixedBoundary(FemMagnetostatic2d):
         plot: bool = False,
         debug: bool = False,
         gif: bool = False,
+        figname: Optional[str] = None,
     ) -> dolfin.Function:
         """
         Solve the G-S problem.
@@ -376,6 +377,8 @@ class FemGradShafranovFixedBoundary(FemMagnetostatic2d):
             condition of 0 on the plasma boundary.
         plot: bool
             Whether or not to plot
+        figname: Optional[str]
+            The name of the figure. If None, a suitable default is used.
 
         Returns
         -------
@@ -387,7 +390,8 @@ class FemGradShafranovFixedBoundary(FemMagnetostatic2d):
         folder = try_get_bluemira_path(
             "", subfolder="generated_data", allow_missing=False
         )
-        figname = "Fixed boundary equilibrium iteration "
+        if figname is None:
+            figname = "Fixed boundary equilibrium iteration "
 
         super().solve(dirichlet_bc_function, dirichlet_marker, neumann_bc_function)
 
