@@ -160,6 +160,9 @@ class PlasmodSolverParams(MappedParameterFrame):
 
 
 class PlasmodSolverProfiles(MappedParameterFrame):
+    """
+    Plasmod Solver Profiles
+    """
 
     x: Parameter[np.ndarray] = Parameter(name="x", value=np.array([]), unit="")
     n_e: Parameter[np.ndarray] = Parameter(name="n_e", value=np.array([]), unit="1/m^3")
@@ -200,8 +203,12 @@ class PlasmodSolverProfiles(MappedParameterFrame):
     n_fuel: Parameter[np.ndarray] = Parameter(
         name="n_fuel", value=np.array([]), unit="1/m^3"
     )
-    n_D: Parameter[np.ndarray] = Parameter(name="n_D", value=np.array([]), unit="1/m^3")
-    n_T: Parameter[np.ndarray] = Parameter(name="n_T", value=np.array([]), unit="1/m^3")
-    n_He: Parameter[np.ndarray] = Parameter(
+    n_D: Parameter[np.ndarray] = Parameter(  # noqa: N815
+        name="n_D", value=np.array([]), unit="1/m^3"
+    )
+    n_T: Parameter[np.ndarray] = Parameter(  # noqa: N815
+        name="n_T", value=np.array([]), unit="1/m^3"
+    )
+    n_He: Parameter[np.ndarray] = Parameter(  # noqa: N815
         name="n_He", value=np.array([]), unit="1/m^3"
     )
