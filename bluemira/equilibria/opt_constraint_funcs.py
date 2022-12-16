@@ -163,7 +163,7 @@ def current_midplane_constraint(
         Boolean controlling whether to constrain the inboard (if True) or
         outboard (if False) side of the plasma midplane.
     """
-    eq.coilset.set_control_currents(vector * scale)
+    eq.coilset.get_control_coils().current = vector * scale
     lcfs = eq.get_LCFS()
     if inboard:
         constraint[:] = radius - min(lcfs.x)
