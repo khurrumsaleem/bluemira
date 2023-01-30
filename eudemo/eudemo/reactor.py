@@ -266,7 +266,7 @@ if __name__ == "__main__":
         params,
         build_config.get("TF coils", {}),
         reactor.plasma.lcfs(),
-        reactor.vacuum_vessel.xz_boundary(),
+        reactor.vv_thermal.xz_boundary(),
     )
 
     reactor.pf_coils = build_pf_coils(
