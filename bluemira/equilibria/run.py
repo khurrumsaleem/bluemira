@@ -476,11 +476,11 @@ class OptimisedPulsedCoilsetDesign(PulsedCoilsetDesign):
         BreakdownZoneStrategy class to use when determining breakdown constraints
     breakdown_problem_cls: Type[BreakdownCOP]
         Coilset optimisation problem class for the breakdown phase
-    breakdown_optimiser: Optimiser
+    breakdown_optimiser: bluemira.utilities.optimiser.Optimiser
         Optimiser for the breakdown
     equilibrium_problem_cls: Type[CoilsetOptimisationProblem]
         Coilset optimisation problem class for the equilibria and current vector
-    equilibrium_optimiser: Optimiser
+    equilibrium_optimiser: bluemira.utilities.optimiser.Optimiser
         Optimiser for the equilibria and current vector
     equilibrium_convergence: ConvergenceCriterion
         Convergence criteria to use when solving equilibria
@@ -488,7 +488,7 @@ class OptimisedPulsedCoilsetDesign(PulsedCoilsetDesign):
         Settings for the solution of equilibria
     position_problem_cls: Type[PulsedNestedPositionCOP]
         Coilset optimisation problem class for the coil positions
-    position_optimiser: Optimiser
+    position_optimiser: bluemira.utilities.optimiser.Optimiser
         Optimiser for the coil positions
     limiter: Optional[Limiter]
         Limiter to use when solving equilibria
